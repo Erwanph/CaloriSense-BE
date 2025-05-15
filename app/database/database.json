@@ -1,0 +1,274 @@
+{
+  "user": [
+    {
+      "email": "tes@gmail.com",
+      "first_name": "",
+      "last_name": "",
+      "date_of_birth": "",
+      "gender": "",
+      "country": ""
+    },
+    {
+      "email": "tes@gmail.com",
+      "first_name": "",
+      "last_name": "",
+      "date_of_birth": "",
+      "gender": "",
+      "country": ""
+    }
+  ],
+  "intake_history": [
+    {
+      "email": "viktor@gmail.com",
+      "intakes": [
+        {
+          "date": "2025-04-12",
+          "protein": 140,
+          "carbohydrate": 300,
+          "fat": 200,
+          "foods": [
+            "nasi goreng",
+            "telor",
+            "telor",
+            "instant noodles"
+          ]
+        }
+      ]
+    },
+    {
+      "email": "tes@gmail.com",
+      "intakes": [
+        {
+          "date": "2025-04-12",
+          "protein": 130,
+          "carbohydrate": 250,
+          "fat": 130,
+          "foods": [
+            "nasi goreng",
+            "telor dadar 2",
+            "ayam goreng 1 potong"
+          ]
+        },
+        {
+          "date": "2025-04-12",
+          "protein": 0,
+          "carbohydrate": 0,
+          "fat": 0,
+          "foods": []
+        }
+      ]
+    }
+  ],
+  "intent": [
+    {
+      "email": "tes@gmail.com",
+      "weight_goal": 78.0,
+      "general_goal": "",
+      "rdi": 2800.0
+    },
+    {
+      "email": "tes@gmail.com",
+      "weight_goal": 78.0,
+      "general_goal": "",
+      "rdi": 2800.0
+    }
+  ],
+  "health_record": [
+    {
+      "email": "tes@gmail.com",
+      "weight": 83.0,
+      "height": 185.0,
+      "food_allergies": "dairy",
+      "daily_exercises": "gym",
+      "daily_activities": "moderately_active",
+      "medical_record": "asthma"
+    },
+    {
+      "email": "tes@gmail.com",
+      "weight": 83.0,
+      "height": 185.0,
+      "food_allergies": "dairy",
+      "daily_exercises": "gym",
+      "daily_activities": "moderately_active",
+      "medical_record": "asthma"
+    }
+  ],
+  "session": [
+    {
+      "email": "viktor@gmail.com",
+      "date": "2025-04-12T12:09:57.913502",
+      "messages": [
+        {
+          "role": "system",
+          "content": "\n    Your name is JoniBot, a highly knowledgeable health assistant.\n    Answer only health-related questions. Be helpful, confident, and concise.\n    Keep responses under 50 words unless absolutely necessary.\n    If unsure, say so. Use short paragraphs like you're chatting.\n    Don't use any asterisks.\n    \nOn 2025-04-12, the user consumed a total of 0 kcal, consisting of 0 kcal from protein, 0 kcal from carbohydrates, and 0 kcal from fat. The foods they ate included: .\n"
+        },
+        {
+          "role": "user",
+          "content": "For the following message, I want to update my food and calorie intake. The foods that I have eaten today are: []. My current intake are: carbohydrate 0 kcal, protein 0 kcal, and fat 0 kcalPlease answer with the format:{\"foods\":[\"food1\",\"food2\"],\"protein\":130,\"fat\":130,\"carbohydrate\":250Do not add any sentence outside of the curly brackets. Please add the new food to the foods array, and sum up the total of calories.\n\nmakan nasi goreng sama 2 telor sadar"
+        },
+        {
+          "role": "assistant",
+          "content": "{\"foods\":[\"nasi goreng\",\"telor\",\"telor\"],\"protein\":140,\"fat\":200,\"carbohydrate\":300}"
+        },
+        {
+          "role": "assistant",
+          "content": "{\"foods\":[\"nasi goreng\",\"telor\",\"telor\"],\"protein\":140,\"fat\":200,\"carbohydrate\":300}"
+        }
+      ]
+    },
+    {
+      "email": "viktor@gmail.com",
+      "date": "2025-04-12T12:23:04.599297",
+      "messages": [
+        {
+          "role": "system",
+          "content": "\n    Your name is JoniBot, a highly knowledgeable health assistant.\n    Answer only health-related questions. Be helpful, confident, and concise.\n    Keep responses under 50 words unless absolutely necessary.\n    If unsure, say so. Use short paragraphs like you're chatting.\n    Don't use any asterisks.\n    \nOn 2025-04-12, the user consumed a total of 640 kcal, consisting of 140 kcal from protein, 300 kcal from carbohydrates, and 200 kcal from fat. The foods they ate included: nasi goreng, telor, telor.\n"
+        },
+        {
+          "role": "user",
+          "content": "selamat pagi jonibot!"
+        },
+        {
+          "role": "assistant",
+          "content": "Selamat pagi! Saya melihat Anda mengonsumsi 640 kcal kemarin dengan menu nasi goreng dan telur. Jika ingin saran nutrisi atau pertanyaan kesehatan, silakan tanyakan. Ingat untuk tetap menjaga asupan gizi seimbang!"
+        },
+        {
+          "role": "assistant",
+          "content": "Selamat pagi! Saya melihat Anda mengonsumsi 640 kcal kemarin dengan menu nasi goreng dan telur. Jika ingin saran nutrisi atau pertanyaan kesehatan, silakan tanyakan. Ingat untuk tetap menjaga asupan gizi seimbang!"
+        }
+      ]
+    },
+    {
+      "email": "viktor@gmail.com",
+      "date": "2025-04-12T12:23:41.583490",
+      "messages": [
+        {
+          "role": "system",
+          "content": "\n    Your name is JoniBot, a highly knowledgeable health assistant.\n    Answer only health-related questions. Be helpful, confident, and concise.\n    Keep responses under 50 words unless absolutely necessary.\n    If unsure, say so. Use short paragraphs like you're chatting.\n    Don't use any asterisks.\n    \nOn 2025-04-12, the user consumed a total of 640 kcal, consisting of 140 kcal from protein, 300 kcal from carbohydrates, and 200 kcal from fat. The foods they ate included: nasi goreng, telor, telor.\n"
+        },
+        {
+          "role": "user",
+          "content": "Good morning jonibot!"
+        },
+        {
+          "role": "assistant",
+          "content": "Good morning! I see your nutrition data from yesterday. Your 640 kcal intake had a good protein amount (140 kcal). For balanced meals, aim for more veggies and fiber. Need specific advice on anything? Keep it brief."
+        },
+        {
+          "role": "assistant",
+          "content": "Good morning! I see your nutrition data from yesterday. Your 640 kcal intake had a good protein amount (140 kcal). For balanced meals, aim for more veggies and fiber. Need specific advice on anything? Keep it brief."
+        }
+      ]
+    },
+    {
+      "email": "viktor@gmail.com",
+      "date": "2025-04-12T12:24:25.301140",
+      "messages": [
+        {
+          "role": "system",
+          "content": "\n    Your name is JoniBot, a highly knowledgeable health assistant.\n    Answer only health-related questions. Be helpful, confident, and concise.\n    Keep responses under 50 words unless absolutely necessary.\n    If unsure, say so. Use short paragraphs like you're chatting.\n    Don't use any asterisks.\n    \nOn 2025-04-12, the user consumed a total of 640 kcal, consisting of 140 kcal from protein, 300 kcal from carbohydrates, and 200 kcal from fat. The foods they ate included: nasi goreng, telor, telor.\n"
+        },
+        {
+          "role": "user",
+          "content": "For the following message, I want to update my food and calorie intake. The foods that I have eaten today are: ['nasi goreng', 'telor', 'telor']. My current intake are: carbohydrate 300 kcal, protein 140 kcal, and fat 200 kcalPlease answer with the format:{\"foods\":[\"food1\",\"food2\"],\"protein\":130,\"fat\":130,\"carbohydrate\":250Do not add any sentence outside of the curly brackets. Please add the new food to the foods array, and sum up the total of calories.\n\nI just ate a bowl of instant noodles, can you write that down?"
+        },
+        {
+          "role": "assistant",
+          "content": "{\"foods\":[\"nasi goreng\",\"telor\",\"telor\",\"instant noodles\"],\"protein\":140,\"fat\":200,\"carbohydrate\":300}"
+        },
+        {
+          "role": "assistant",
+          "content": "{\"foods\":[\"nasi goreng\",\"telor\",\"telor\",\"instant noodles\"],\"protein\":140,\"fat\":200,\"carbohydrate\":300}"
+        }
+      ]
+    },
+    {
+      "email": "viktor@gmail.com",
+      "date": "2025-04-12T12:25:10.244990",
+      "messages": [
+        {
+          "role": "system",
+          "content": "\n    Your name is JoniBot, a highly knowledgeable health assistant.\n    Answer only health-related questions. Be helpful, confident, and concise.\n    Keep responses under 50 words unless absolutely necessary.\n    If unsure, say so. Use short paragraphs like you're chatting.\n    Don't use any asterisks.\n    \nOn 2025-04-12, the user consumed a total of 640 kcal, consisting of 140 kcal from protein, 300 kcal from carbohydrates, and 200 kcal from fat. The foods they ate included: nasi goreng, telor, telor, instant noodles.\n"
+        },
+        {
+          "role": "user",
+          "content": "Is tofu healthy for me ?"
+        },
+        {
+          "role": "assistant",
+          "content": "Yes, tofu is healthy! It's a great plant-based protein source, low in calories, and rich in iron, calcium, and isoflavones (which may benefit heart health). Opt for minimally processed varieties. If you have thyroid issues, moderate intake due to its goitrogenic properties. Generally, a nutritious choice!"
+        },
+        {
+          "role": "assistant",
+          "content": "Yes, tofu is healthy! It's a great plant-based protein source, low in calories, and rich in iron, calcium, and isoflavones (which may benefit heart health). Opt for minimally processed varieties. If you have thyroid issues, moderate intake due to its goitrogenic properties. Generally, a nutritious choice!"
+        }
+      ]
+    },
+    {
+      "email": "tes@gmail.com",
+      "date": "2025-04-12T12:31:57.972996",
+      "messages": [
+        {
+          "role": "system",
+          "content": "\n    Your name is JoniBot, a highly knowledgeable health assistant.\n    Answer only health-related questions. Be helpful, confident, and concise.\n    Keep responses under 50 words unless absolutely necessary.\n    If unsure, say so. Use short paragraphs like you're chatting.\n    Don't use any asterisks.\n    \nThe user's name is  . They were born on , identify as , and are from . Their registered email is tes@gmail.com.\n\nThe user with email tes@gmail.com has a weight of 83.0 kilograms and a height of 185.0 centimeters. They have the following food allergies: dairy. Their daily exercises include: gym, and their daily activities are: moderately_active. Their medical record contains the following notes: asthma.\n\nThe user with email tes@gmail.com has a goal to reach a weight of 78.0 kilograms. Their general goal is: . Their recommended daily intake (RDI) is 2800.0 kilocalories.\n\nOn 2025-04-12, the user consumed a total of 0 kcal, consisting of 0 kcal from protein, 0 kcal from carbohydrates, and 0 kcal from fat. The foods they ate included: .\n"
+        },
+        {
+          "role": "user",
+          "content": "For the following message, I want to update my food and calorie intake. The foods that I have eaten today are: []. My current intake are: carbohydrate 0 kcal, protein 0 kcal, and fat 0 kcalPlease answer with the format:{\"foods\":[\"food1\",\"food2\"],\"protein\":130,\"fat\":130,\"carbohydrate\":250Do not add any sentence outside of the curly brackets. Please add the new food to the foods array, and sum up the total of calories.\n\nmakan nasi goreng sama telor dadar 2"
+        },
+        {
+          "role": "assistant",
+          "content": "{\"foods\":[\"nasi goreng\",\"telor dadar 2\"],\"protein\":130,\"fat\":130,\"carbohydrate\":250}"
+        },
+        {
+          "role": "assistant",
+          "content": "{\"foods\":[\"nasi goreng\",\"telor dadar 2\"],\"protein\":130,\"fat\":130,\"carbohydrate\":250}"
+        }
+      ]
+    },
+    {
+      "email": "tes@gmail.com",
+      "date": "2025-04-12T12:32:20.664401",
+      "messages": [
+        {
+          "role": "system",
+          "content": "\n    Your name is JoniBot, a highly knowledgeable health assistant.\n    Answer only health-related questions. Be helpful, confident, and concise.\n    Keep responses under 50 words unless absolutely necessary.\n    If unsure, say so. Use short paragraphs like you're chatting.\n    Don't use any asterisks.\n    \nThe user's name is  . They were born on , identify as , and are from . Their registered email is tes@gmail.com.\n\nThe user with email tes@gmail.com has a weight of 83.0 kilograms and a height of 185.0 centimeters. They have the following food allergies: dairy. Their daily exercises include: gym, and their daily activities are: moderately_active. Their medical record contains the following notes: asthma.\n\nThe user with email tes@gmail.com has a goal to reach a weight of 78.0 kilograms. Their general goal is: . Their recommended daily intake (RDI) is 2800.0 kilocalories.\n\nOn 2025-04-12, the user consumed a total of 510 kcal, consisting of 130 kcal from protein, 250 kcal from carbohydrates, and 130 kcal from fat. The foods they ate included: nasi goreng, telor dadar 2.\n"
+        },
+        {
+          "role": "user",
+          "content": "For the following message, I want to update my food and calorie intake. The foods that I have eaten today are: ['nasi goreng', 'telor dadar 2']. My current intake are: carbohydrate 250 kcal, protein 130 kcal, and fat 130 kcalPlease answer with the format:{\"foods\":[\"food1\",\"food2\"],\"protein\":130,\"fat\":130,\"carbohydrate\":250Do not add any sentence outside of the curly brackets. Please add the new food to the foods array, and sum up the total of calories.\n\nberapa kalori ayam goreng 1 potong"
+        },
+        {
+          "role": "assistant",
+          "content": "{\"foods\":[\"nasi goreng\",\"telor dadar 2\",\"ayam goreng 1 potong\"],\"protein\":130,\"fat\":130,\"carbohydrate\":250}"
+        },
+        {
+          "role": "assistant",
+          "content": "{\"foods\":[\"nasi goreng\",\"telor dadar 2\",\"ayam goreng 1 potong\"],\"protein\":130,\"fat\":130,\"carbohydrate\":250}"
+        }
+      ]
+    },
+    {
+      "email": "tes@gmail.com",
+      "date": "2025-04-12T12:34:17.807201",
+      "messages": [
+        {
+          "role": "system",
+          "content": "\n    Your name is JoniBot, a highly knowledgeable health assistant.\n    Answer only health-related questions. Be helpful, confident, and concise.\n    Keep responses under 50 words unless absolutely necessary.\n    If unsure, say so. Use short paragraphs like you're chatting.\n    Don't use any asterisks.\n    \nThe user's name is  . They were born on , identify as , and are from . Their registered email is tes@gmail.com.\n\nThe user with email tes@gmail.com has a weight of 83.0 kilograms and a height of 185.0 centimeters. They have the following food allergies: dairy. Their daily exercises include: gym, and their daily activities are: moderately_active. Their medical record contains the following notes: asthma.\n\nThe user with email tes@gmail.com has a goal to reach a weight of 78.0 kilograms. Their general goal is: . Their recommended daily intake (RDI) is 2800.0 kilocalories.\n\nOn 2025-04-12, the user consumed a total of 510 kcal, consisting of 130 kcal from protein, 250 kcal from carbohydrates, and 130 kcal from fat. The foods they ate included: nasi goreng, telor dadar 2, ayam goreng 1 potong.\n"
+        },
+        {
+          "role": "user",
+          "content": "berapa kalori ayam goreng 1 potong"
+        },
+        {
+          "role": "assistant",
+          "content": "Ayam goreng 1 potong (sekitar 100-120 gram) mengandung sekitar **250-300 kcal**, tergantung cara memasak dan bagian ayam. Jika digoreng dengan banyak minyak, kalori bisa lebih tinggi.  \n\nPerhatikan juga alergi susu (dairy) jika ayam dibumbui dengan mentega atau krim."
+        },
+        {
+          "role": "assistant",
+          "content": "Ayam goreng 1 potong (sekitar 100-120 gram) mengandung sekitar **250-300 kcal**, tergantung cara memasak dan bagian ayam. Jika digoreng dengan banyak minyak, kalori bisa lebih tinggi.  \n\nPerhatikan juga alergi susu (dairy) jika ayam dibumbui dengan mentega atau krim."
+        }
+      ]
+    }
+  ]
+}
