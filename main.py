@@ -4,7 +4,7 @@ from app.routes import auth, chat, user
 from app.services.database_handler import DatabaseHandler
 
 app = FastAPI(
-    title="NutriChat",
+    title="CaloriSense",
     version="1.0.0",
     description="A FastAPI backend for a mobile chatbot app using DeepSeek and Firebase."
 )
