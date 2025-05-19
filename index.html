@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>WebSocket Test</h1>
+    <input type="text" id="emailInput" placeholder="Enter email">
+    <input type="text" id="messageInput" placeholder="Enter message">
+    <button onclick="sendMessage()">Send</button>
+    <div id="output"></div>
+
+    <script>
+        let socket;
+
+        function connect() {
+            const email = document.getElementById('emailInput').value;
+            if (!email) {
+                alert('Please enter an email');
+                return;
+            }
+
+            socket = new WebSocket(`ws://localhost:8000/chat/ws/${email}`);
+
+            socket.onopen = function(e) {
+                appendMessage('Connection established');
+            };
+
+            socket.onmessage = function(event) {
+                appendMessage(`Data received: ${event.data}`);
+            };
+
+            socket.onclose = function(event) {
+                if (event.wasClean) {
+                    appendMessage(`Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+                } else {
+                    appendMessage('Connection died');
+                }
+            };
+
+            socket.onerror = function(error) {
+                appendMessage(`Error: ${error.message}`);
+            };
+        }
+
+        function sendMessage() {
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                connect();
+                // Wait a bit for the connection to establish
+                setTimeout(actualSend, 500);
+            } else {
+                actualSend();
+            }
+        }
+
+        function actualSend() {
+            const message = document.getElementById('messageInput').value;
+            if (!message) {
+                alert('Please enter a message');
+                return;
+            }
+            
+            const payload = JSON.stringify({
+                message: message
+            });
+            
+            socket.send(payload);
+            appendMessage(`Message sent: ${payload}`);
+        }
+
+        function appendMessage(message) {
+            const output = document.getElementById('output');
+            const p = document.createElement('p');
+            p.textContent = message;
+            output.appendChild(p);
+        }
+    </script>
+</body>
+</html>
