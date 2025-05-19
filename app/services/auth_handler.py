@@ -1,31 +1,95 @@
-import json
 import os
+from dotenv import load_dotenv
+from supabase import create_client, Client
+from typing import Dict, Any
 
-from app.services.config import Config
+# Load environment variables
+load_dotenv()
 
 class AuthHandler:
     def __init__(self) -> None:
-        self.filepath = Config.USER_INFO_PATH
-        self.users: list[dict] = []
-        self.load_users()
+        self._supabase = self._initialize_supabase()
     
-    def register(self, email: str, password: str) -> bool:
-        if any(user["email"] == email for user in self.users):
-            return False
-        self.users.append({"email": email, "password": password})
-        self.save_users()
-        return True
+    def _initialize_supabase(self) -> Client:
+        """Initialize and return Supabase client"""
+        url = os.environ.get("SUPABASE_URL")
+        key = os.environ.get("SUPABASE_ANON_KEY")
+        
+        if not url or not key:
+            raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY must be set in .env file")
+            
+        return create_client(url, key)
 
-    def login(self, email: str, password: str) -> bool:
-        return any(user["email"] == email and user["password"] == password for user in self.users)
-    
-    def load_users(self) -> None:
-        if os.path.exists(self.filepath):
-            with open(self.filepath, "r", encoding="utf-8") as f:
-                self.users = json.load(f)
-        else:
-            self.users = []
+    def register(self, email: str, password: str) -> Dict[str, Any]:
+        """Register new user using Supabase authentication"""
+        try:
+            response = self._supabase.auth.sign_up({
+                "email": email,
+                "password": password
+            })
+            
+            return {
+                "status": "success",
+                "data": {
+                    "user_id": response.user.id,
+                    "email": response.user.email,
+                    "session": response.session.access_token if response.session else None
+                }
+            }
+            
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": str(e)
+            }
 
-    def save_users(self) -> None:
-        with open(self.filepath, "w", encoding="utf-8") as f:
-            json.dump(self.users, f, indent=2)
+    def login(self, email: str, password: str) -> Dict[str, Any]:
+        """Authenticate user using Supabase"""
+        try:
+            response = self._supabase.auth.sign_in_with_password({
+                "email": email,
+                "password": password
+            })
+            
+            return {
+                "status": "success",
+                "data": {
+                    "access_token": response.session.access_token,
+                    "refresh_token": response.session.refresh_token,
+                    "user_id": response.user.id
+                }
+            }
+            
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": str(e)
+            }
+
+    def get_user(self, access_token: str) -> Dict[str, Any]:
+        """Get user data from Supabase using access token"""
+        try:
+            user = self._supabase.auth.get_user(access_token)
+            return {
+                "status": "success",
+                "data": user.user.dict()
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": str(e)
+            }
+
+    def logout(self, access_token: str) -> Dict[str, Any]:
+        """Logout user session"""
+        try:
+            self._supabase.auth.sign_out(access_token)
+            return {
+                "status": "success",
+                "message": "Logged out successfully"
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": str(e)
+            }

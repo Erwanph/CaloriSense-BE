@@ -1,43 +1,10 @@
 import asyncio
-from datetime import datetime
-import httpx
-from app.database.elements.session import Session
-from app.services.config import Config
-from app.services.database_handler import DatabaseHandler
-from dateutil.relativedelta import relativedelta
+from typing import Dict, List, Any
 
-DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions"
+# Import the Deepseek class from the refactored module
+from app.services.deepseek_impl import Deepseek, DeepseekAPI
 
-async def send(messages: list[dir], temperature: float = 0.7) -> str:
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {Config.DEEPSEEK_KEY}"
-    }
-
-    payload = {
-        "model": "deepseek-chat",
-        "messages": messages,
-        "temperature": temperature,
-        "max_tokens": 512,
-        "stream": False
-    }
-
-    timeout = httpx.Timeout(30.0)
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        try:
-            response = await client.post(DEEPSEEK_API_URL, headers=headers, json=payload)
-        except httpx.ReadTimeout:
-            raise Exception("DeepSeek API timed out. Please try again later.")
-
-    if response.status_code != 200:
-        raise Exception(f"DeepSeek API error: {response.status_code} - {response.text}")
-
-    data = response.json()
-    try:
-        return data["choices"][0]["message"]["content"]
-    except (KeyError, IndexError):
-        raise Exception(f"Unexpected response format: {data}")
-
+# Export the calculate_rdi function directly to maintain backward compatibility
 async def calculate_rdi(
         weight: float,
         height: float,
@@ -46,60 +13,24 @@ async def calculate_rdi(
         daily_activities: str,
         general_goal: str
     ) -> float:
-
-    message = (
-        f"The user was born on {date_of_birth}, a {gender} weighing {weight} kilograms and "
-        f"{height} centimeters tall. Their daily activity level is '{daily_activities}', "
-        f"and their goal is to '{general_goal}'. Please calculate the RDI (Recommended Daily Intake) "
-        f"in kilocalories for this person based on this information."
+    """
+    Calculate Recommended Daily Intake based on user information.
+    This function is a wrapper around Deepseek.calculate_rdi to maintain
+    backward compatibility with existing code.
+    """
+    return await Deepseek.calculate_rdi(
+        weight=weight,
+        height=height,
+        date_of_birth=date_of_birth,
+        gender=gender,
+        daily_activities=daily_activities,
+        general_goal=general_goal
     )
 
-    messages = [
-        {"role": "system", "content": "Please calculate the RDI based on the following condition. Answers only in numbers. Do not show me the calculation, answer only in one word."},
-        {"role": "user", "content": message}
-    ]
-
-    response = await send(messages, 0)
-
-    try:
-        return float(response.strip())
-    except ValueError:
-        raise ValueError(f"Invalid response for RDI: {response}")
-
-class Deepseek:
-    async def send(message: str, email: str, temperature: float = 0.7):
-        session = DatabaseHandler.find_session(email)
-        if (session is None):
-            session = Session(email)
-            session.add_system_prompt()
-            DatabaseHandler.session.append(session)
-        
-        session.add_user_prompt(message)
-        response = await Deepseek._send_messages(session, temperature)
-        session.add_assisant_response(response)
-        DatabaseHandler.save()
-        return response
-
-    async def _send_messages(session: Session, temperature: float) -> None:
-        messages = session.messages
-        if not messages:
-            raise ValueError("No messages to send.")
-
-        response = await send(messages, temperature)
-        messages.append({"role": "assistant", "content": response})
-        return response
-    
-
-
-async def main():
-    joniBot = Deepseek(Config.SYSTEM_PROMPT)
-    while True:
-        prompt = input("> ")
-        if prompt.lower() in {"exit", "quit"}:
-            break
-        joniBot.add_user_message(prompt)
-        response = await joniBot.send()
-        print(response)
-
-if __name__ == "__main__":
-    asyncio.run(main())
+# Re-export the send function for backward compatibility
+async def send(messages: List[Dict[str, str]], temperature: float = 0.7) -> str:
+    """
+    Send messages to the DeepSeek API and return the response.
+    Wrapper for backward compatibility.
+    """
+    return await DeepseekAPI.send(messages, temperature)

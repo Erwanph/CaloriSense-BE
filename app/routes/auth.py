@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends, Header
 from pydantic import BaseModel
 from app.database.elements.health_record import HealthRecord
 from app.database.elements.intake import Intake, IntakeHistory
@@ -7,37 +7,71 @@ from app.database.elements.user import User
 from app.services.auth_handler import AuthHandler
 from typing import List, Optional
 from datetime import datetime
+from fastapi.security import HTTPBearer
 
 from app.services.database_handler import DatabaseHandler
 from app.services.deepseek_handler import calculate_rdi
 
-
 router = APIRouter()
 auth_handler = AuthHandler()
+security = HTTPBearer()
+
+# Helper function untuk mendapatkan current user
+async def get_current_user(authorization: str = Header(...)) -> dict:
+    try:
+        token = authorization.split("Bearer ")[-1]
+        user_response = auth_handler.get_user(token)
+        if user_response["status"] == "error":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+            )
+        return user_response["data"]
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+        )
 
 class AuthRequest(BaseModel):
     email: str
     password: str
 
 @router.post("/register")
-def register_user(auth: AuthRequest):
-    success = auth_handler.register(auth.email, auth.password)
-    if not success:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User already exists.")
-    
-    return {"message": "User registered successfully."}
-
+async def register_user(auth: AuthRequest):
+    response = auth_handler.register(auth.email, auth.password)
+    if response["status"] == "error":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=response["message"]
+        )
+    return {
+        "message": "User registered successfully",
+        "data": {
+            "user_id": response["data"]["user_id"],
+            "email": response["data"]["email"]
+        }
+    }
 
 @router.post("/login")
-def login_user(auth: AuthRequest):
-    success = auth_handler.login(auth.email, auth.password)
-    if not success:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials.")
-    return {"message": "Login successful."}
+async def login_user(auth: AuthRequest):
+    response = auth_handler.login(auth.email, auth.password)
+    if response["status"] == "error":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=response["message"]
+        )
+    return {
+        "message": "Login successful",
+        "data": {
+            "access_token": response["data"]["access_token"],
+            "refresh_token": response["data"]["refresh_token"],
+            "user_id": response["data"]["user_id"]
+        }
+    }
 
 class InitializationRequest(BaseModel):
     # User
-    email: str
     first_name: str
     last_name: str
     date_of_birth: str
@@ -57,10 +91,15 @@ class InitializationRequest(BaseModel):
     general_goal: str
 
 @router.post("/initialize")
-async def initialize_user(data: InitializationRequest):
+async def initialize_user(
+    data: InitializationRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    email = current_user["email"]
+    
     # --- User ---
     new_user = User(
-        email=data.email,
+        email=email,
         first_name=data.first_name,
         last_name=data.last_name,
         date_of_birth=data.date_of_birth,
@@ -71,7 +110,7 @@ async def initialize_user(data: InitializationRequest):
 
     # --- Health Record ---
     new_health = HealthRecord(
-        email=data.email,
+        email=email,
         weight=data.weight,
         height=data.height,
         food_allergies=data.food_allergies,
@@ -92,7 +131,7 @@ async def initialize_user(data: InitializationRequest):
 
     # --- Intent ---
     new_intent = Intent(
-        email=data.email,
+        email=email,
         weight_goal=data.weight_goal,
         general_goal=data.general_goal,
         rdi=rdi
@@ -100,4 +139,14 @@ async def initialize_user(data: InitializationRequest):
     DatabaseHandler.intent.append(new_intent)
     DatabaseHandler.save()
 
-    return {"message": "User, health record, intent, and intake initialized successfully."}
+    return {"message": "User data initialized successfully"}
+
+@router.post("/logout")
+async def logout_user(current_user: dict = Depends(get_current_user)):
+    response = auth_handler.logout(current_user["access_token"])
+    if response["status"] == "error":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=response["message"]
+        )
+    return {"message": "Successfully logged out"}

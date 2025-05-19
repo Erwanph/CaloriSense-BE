@@ -1,4 +1,10 @@
 from datetime import datetime
+import os
+from dotenv import load_dotenv
+from supabase import create_client
+import json
+from typing import Any, Dict, Union, List
+
 from app.database.elements.health_record import HealthRecord
 from app.database.elements.intake import Intake, IntakeHistory
 from app.database.elements.session import Session
@@ -6,10 +12,8 @@ from app.database.elements.intent import Intent
 from app.database.elements.user import User
 from app.services.config import Config
 
-import json
-from typing import Any, Dict, Union
-from datetime import datetime
-
+# Load environment variables
+load_dotenv()
 
 class DatabaseHandler:
     user: list[User] = []
@@ -17,30 +21,45 @@ class DatabaseHandler:
     intent: list[Intent] = []
     health_record: list[HealthRecord] = []
     session: list[Session] = []
+    
+    # Supabase client instance
+    _supabase = None
+    
+    @staticmethod
+    def get_supabase():
+        """Get or initialize the Supabase client"""
+        if DatabaseHandler._supabase is None:
+            url = os.environ.get("SUPABASE_URL")
+            key = os.environ.get("SUPABASE_ANON_KEY")
+            if not url or not key:
+                raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY must be set in .env file")
+            DatabaseHandler._supabase = create_client(url, key)
+        return DatabaseHandler._supabase
 
     @staticmethod
     def init():
         print("init called")
 
         try:
-            JSONHelper.load_database(Config.DATABASE_PATH)
-            print("Database loaded successfully.")
-        except FileNotFoundError:
+            # Load data from Supabase
+            JSONHelper.load_database_from_supabase()
+            print("Database loaded successfully from Supabase.")
+        except Exception as e:
+            print(f"Error loading from Supabase: {e}")
             DatabaseHandler.user = []
             DatabaseHandler.intake_history = []
             DatabaseHandler.intent = []
             DatabaseHandler.health_record = []
             DatabaseHandler.session = []
-            print("Database file not found. Initialized empty database.")
+            print("Initialized empty database.")
             DatabaseHandler.save()
 
     @staticmethod
     def save():
-        JSONHelper.save_database(Config.DATABASE_PATH)
-        print("Database saved successfully.")
+        JSONHelper.save_database_to_supabase()
+        print("Database saved successfully to Supabase.")
 
     @staticmethod
-    
     def find_user(email: str) -> User:
         for user in DatabaseHandler.user:
             if user.email == email:
@@ -72,7 +91,6 @@ class DatabaseHandler:
 
         intake_history.intakes.append(new_intake)
         return new_intake
-        
     
     @staticmethod
     def find_intent(email: str) -> Intent:
@@ -96,6 +114,7 @@ class DatabaseHandler:
                 return session
         return None
 
+
 class JSONHelper:
     @staticmethod
     def export_json(data: Dict[str, Any], indent: int = 2) -> str:
@@ -106,7 +125,8 @@ class JSONHelper:
         return json.loads(json_input)
 
     @staticmethod
-    def save_database(filepath: str) -> None:
+    def save_database_to_supabase() -> None:
+        """Save the database to Supabase"""
         data = {
             "user": [u.to_dir() for u in DatabaseHandler.user],
             "intake_history": [ih.to_dir() for ih in DatabaseHandler.intake_history],
@@ -114,14 +134,45 @@ class JSONHelper:
             "health_record": [hr.to_dir() for hr in DatabaseHandler.health_record],
             "session": [s.to_dir() for s in DatabaseHandler.session],
         }
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(JSONHelper.export_json(data))
+        
+        # Convert to JSON object (not string)
+        json_data = data
+        
+        # Store data in Supabase
+        supabase = DatabaseHandler.get_supabase()
+        
+        # Check if there's an existing record and update it, or insert a new one
+        result = supabase.table('app_data').select('id').eq('name', 'main_database').execute()
+        
+        if result.data and len(result.data) > 0:
+            # Update existing record
+            record_id = result.data[0]['id']
+            supabase.table('app_data').update({'data': json_data}).eq('id', record_id).execute()
+        else:
+            # Create new record
+            supabase.table('app_data').insert({'name': 'main_database', 'data': json_data}).execute()
 
     @staticmethod
-    def load_database(filepath: str) -> None:
-        with open(filepath, "r", encoding="utf-8") as f:
-            data = JSONHelper.import_json(f.read())
-
+    def load_database_from_supabase() -> None:
+        """Load the database from Supabase"""
+        supabase = DatabaseHandler.get_supabase()
+        
+        # Fetch data from Supabase
+        result = supabase.table('app_data').select('data').eq('name', 'main_database').execute()
+        
+        if not result.data or len(result.data) == 0:
+            # No data found, initialize with empty database
+            DatabaseHandler.user = []
+            DatabaseHandler.intake_history = []
+            DatabaseHandler.intent = []
+            DatabaseHandler.health_record = []
+            DatabaseHandler.session = []
+            return
+        
+        # Data is already in JSON format
+        data = result.data[0]['data']
+        
+        # Load data into the DatabaseHandler
         DatabaseHandler.user = [User(**u) for u in data.get("user", [])]
 
         DatabaseHandler.intake_history = [
@@ -141,6 +192,15 @@ class JSONHelper:
             JSONHelper._load_session(s) for s in data.get("session", [])
         ]
 
+    @staticmethod
+    def save_database(filepath: str) -> None:
+        """Legacy method for local file saving - redirects to Supabase saving"""
+        JSONHelper.save_database_to_supabase()
+
+    @staticmethod
+    def load_database(filepath: str) -> None:
+        """Legacy method for local file loading - redirects to Supabase loading"""
+        JSONHelper.load_database_from_supabase()
 
     @staticmethod
     def _default_serializer(obj):
@@ -155,6 +215,7 @@ class JSONHelper:
         s.messages = data.get("messages", [])
         return s
 
+
 if __name__ == "__main__":
     db_handler = DatabaseHandler()
-    db_handler.save()
+    db_handler.init()  # This will initialize and load from Supabase
