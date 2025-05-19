@@ -1,78 +1,192 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>WebSocket Test</title>
+    <title>CaloriSense Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #chatbox {
+            height: 400px;
+            border: 1px solid #ccc;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 5px;
+        }
+        .user-message {
+            background-color: #dcf8c6;
+            align-self: flex-end;
+            text-align: right;
+            margin-left: 50px;
+        }
+        .bot-message {
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            align-self: flex-start;
+            margin-right: 50px;
+        }
+        #message-form {
+            display: flex;
+        }
+        #message-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        #email-container {
+            margin-bottom: 20px;
+        }
+        #status {
+            font-style: italic;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
 </head>
 <body>
-    <h1>WebSocket Test</h1>
-    <input type="text" id="emailInput" placeholder="Enter email">
-    <input type="text" id="messageInput" placeholder="Enter message">
-    <button onclick="sendMessage()">Send</button>
-    <div id="output"></div>
-
+    <h1>CaloriSense Chat</h1>
+    
+    <div id="email-container">
+        <input type="email" id="email-input" placeholder="Masukkan email Anda" required>
+        <button id="connect-btn">Connect</button>
+    </div>
+    
+    <div id="status">Belum terhubung</div>
+    
+    <div id="chatbox"></div>
+    
+    <form id="message-form">
+        <input type="text" id="message-input" placeholder="Ketik pesan..." disabled>
+        <button type="submit" disabled id="send-btn">Kirim</button>
+    </form>
+    
     <script>
-        let socket;
-
-        function connect() {
-            const email = document.getElementById('emailInput').value;
+        let socket = null;
+        
+        const statusDiv = document.getElementById('status');
+        const chatbox = document.getElementById('chatbox');
+        const messageForm = document.getElementById('message-form');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const emailInput = document.getElementById('email-input');
+        const connectBtn = document.getElementById('connect-btn');
+        
+        // Connect to WebSocket
+        connectBtn.addEventListener('click', function() {
+            const email = emailInput.value.trim();
             if (!email) {
-                alert('Please enter an email');
+                alert('Silakan masukkan email Anda');
                 return;
             }
-
+            
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.close();
+            }
+            
+            // Perbarui status
+            statusDiv.textContent = 'Menghubungkan...';
+            
+            // Connect to WebSocket
             socket = new WebSocket(`ws://localhost:8000/chat/ws/${email}`);
-
-            socket.onopen = function(e) {
-                appendMessage('Connection established');
+            
+            socket.onopen = function() {
+                statusDiv.textContent = 'Terhubung ke chatbot';
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+                connectBtn.textContent = 'Reconnect';
+                emailInput.disabled = true;
             };
-
+            
             socket.onmessage = function(event) {
-                appendMessage(`Data received: ${event.data}`);
-            };
-
-            socket.onclose = function(event) {
-                if (event.wasClean) {
-                    appendMessage(`Connection closed cleanly, code=${event.code} reason=${event.reason}`);
-                } else {
-                    appendMessage('Connection died');
+                const response = JSON.parse(event.data);
+                
+                if (response.status === 'processing') {
+                    statusDiv.textContent = 'Bot sedang berpikir...';
+                } 
+                else if (response.status === 'error') {
+                    addMessage('Error: ' + response.message, 'bot');
+                    statusDiv.textContent = 'Terhubung ke chatbot';
+                }
+                else if (response.status === 'completed') {
+                    addMessage(response.response, 'bot');
+                    statusDiv.textContent = 'Terhubung ke chatbot';
                 }
             };
-
-            socket.onerror = function(error) {
-                appendMessage(`Error: ${error.message}`);
+            
+            socket.onclose = function() {
+                statusDiv.textContent = 'Koneksi terputus';
+                messageInput.disabled = true;
+                sendBtn.disabled = true;
+                emailInput.disabled = false;
             };
-        }
-
-        function sendMessage() {
-            if (!socket || socket.readyState !== WebSocket.OPEN) {
-                connect();
-                // Wait a bit for the connection to establish
-                setTimeout(actualSend, 500);
+            
+            socket.onerror = function(error) {
+                statusDiv.textContent = 'Terjadi kesalahan koneksi';
+                console.error('WebSocket Error:', error);
+            };
+        });
+        
+        // Send message
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                // Tambahkan pesan pengguna ke chatbox
+                addMessage(message, 'user');
+                
+                // Kirim pesan melalui WebSocket
+                socket.send(JSON.stringify({
+                    message: message
+                }));
+                
+                // Reset input
+                messageInput.value = '';
             } else {
-                actualSend();
+                alert('Koneksi terputus. Silakan hubungkan kembali.');
             }
-        }
-
-        function actualSend() {
-            const message = document.getElementById('messageInput').value;
-            if (!message) {
-                alert('Please enter a message');
-                return;
+        });
+        
+        // Fungsi untuk menambahkan pesan ke chatbox
+        function addMessage(text, sender) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            
+            if (sender === 'user') {
+                messageElement.classList.add('user-message');
+            } else {
+                messageElement.classList.add('bot-message');
             }
             
-            const payload = JSON.stringify({
-                message: message
-            });
+            // Handle newlines in the text
+            const formattedText = text.replace(/\n/g, '<br>');
+            messageElement.innerHTML = formattedText;
             
-            socket.send(payload);
-            appendMessage(`Message sent: ${payload}`);
-        }
-
-        function appendMessage(message) {
-            const output = document.getElementById('output');
-            const p = document.createElement('p');
-            p.textContent = message;
-            output.appendChild(p);
+            chatbox.appendChild(messageElement);
+            
+            // Auto-scroll to bottom
+            chatbox.scrollTop = chatbox.scrollHeight;
         }
     </script>
 </body>

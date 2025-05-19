@@ -1,4 +1,4 @@
-from app.services.deepseek_handler import send
+from app.services.deepseek_handler import Deepseek, DeepseekAPI
 from app.services.database_handler import DatabaseHandler
 
 possible_intentions = [
@@ -23,11 +23,15 @@ Respond with a single digit only.
 class IntentPredictor:
     @staticmethod
     async def predict(message: str):
-        respond = await send([
+        messages = [
             {"role": "system", "content": intent_system_prompt},
             {"role": "user", "content": message}
-        ], 0)
-        return int(respond)
+        ]
+        response = await DeepseekAPI.send(messages, temperature=0)
+        try:
+            return int(response.strip())
+        except ValueError:
+            return 0 
     
     @staticmethod
     def intent_prompt(intentIdx: int, email: str):

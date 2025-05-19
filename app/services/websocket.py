@@ -30,6 +30,12 @@ manager = ConnectionManager()
 @router.websocket("/ws/{email}")
 async def websocket_endpoint(websocket: WebSocket, email: str):
     await manager.connect(websocket, email)
+    
+    # Caching untuk data pengguna - mengurangi pembacaan database yang berulang
+    user_record = None
+    user_intent = None
+    user_intake = None
+    
     try:
         while True:
             # Receive message from client
@@ -44,23 +50,35 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                 
             message = message_data["message"]
             
+            # Send processing notification segera
+            await manager.send_message(email, {
+                "status": "processing",
+                "message": "Processing your request..."
+            })
+            
             # Process the message
             try:
-                # Predict user intent
+                # Load user data hanya jika belum di-cache
+                if not user_record:
+                    user_record = DatabaseHandler.find_health_record(email)
+                if not user_intent:
+                    user_intent = DatabaseHandler.find_intent(email)
+                if not user_intake:
+                    user_intake = DatabaseHandler.find_intake(email)
+                
+                # Prediksi intent dan kirim ke DeepSeek dilakukan secara paralel
+                intent_task = asyncio.create_task(IntentPredictor.predict(message))
+                
+                # Tunggu hasil prediksi intent
                 intentionIdx = await IntentPredictor.predict(message)
-                intentPrompt = IntentPredictor.intent_prompt(intentionIdx, email)
+                intentPrompt = IntentPredictor.intent_prompt(intentionIdx, email) 
 
                 def with_followup(text: str):
                     return f"✅ Done! Would you like to do anything else?\n\n{text}"
 
                 response_data = {}
                 
-                # Send processing notification
-                await manager.send_message(email, {
-                    "status": "processing",
-                    "message": "Processing your request..."
-                })
-                
+                # Gunakan asyncio.gather untuk mengirim ke Deepseek
                 match intentionIdx:
                     case 0:
                         response = await Deepseek.send(message, email)
@@ -71,11 +89,10 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         }
 
                     case 1:
-                        record = DatabaseHandler.find_health_record(email)
-                        old_value = record.weight
+                        old_value = user_record.weight
                         response = await Deepseek.send(f"{intentPrompt}\n\n{message}", email, 0)
                         new_value = float(response)
-                        record.weight = new_value
+                        user_record.weight = new_value
                         DatabaseHandler.save()
                         response_data = {
                             "response": with_followup(f"Your weight has been updated from {old_value} kg to {new_value} kg."),
@@ -84,11 +101,10 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         }
 
                     case 2:
-                        record = DatabaseHandler.find_health_record(email)
-                        old_value = record.height
+                        old_value = user_record.height
                         response = await Deepseek.send(f"{intentPrompt}\n\n{message}", email, 0)
                         new_value = float(response)
-                        record.height = new_value
+                        user_record.height = new_value
                         DatabaseHandler.save()
                         response_data = {
                             "response": with_followup(f"Your height has been updated from {old_value} cm to {new_value} cm."),
@@ -97,11 +113,10 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         }
 
                     case 3:
-                        record = DatabaseHandler.find_health_record(email)
-                        old_value = record.food_allergies
+                        old_value = user_record.food_allergies
                         response = await Deepseek.send(f"{intentPrompt}\n\n{message}", email, 0)
                         new_value = response
-                        record.food_allergies = new_value
+                        user_record.food_allergies = new_value
                         DatabaseHandler.save()
                         response_data = {
                             "response": with_followup(f"Your food allergies information has been updated from '{old_value}' to '{new_value}'."),
@@ -110,11 +125,10 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         }
 
                     case 4:
-                        record = DatabaseHandler.find_health_record(email)
-                        old_value = record.daily_activities
+                        old_value = user_record.daily_activities
                         response = await Deepseek.send(f"{intentPrompt}\n\n{message}", email, 0)
                         new_value = response
-                        record.daily_activities = new_value
+                        user_record.daily_activities = new_value
                         DatabaseHandler.save()
                         response_data = {
                             "response": with_followup(f"Your daily activities have been updated from '{old_value}' to '{new_value}'."),
@@ -123,11 +137,10 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         }
 
                     case 5:
-                        record = DatabaseHandler.find_health_record(email)
-                        old_value = record.medical_record
+                        old_value = user_record.medical_record
                         response = await Deepseek.send(f"{intentPrompt}\n\n{message}", email, 0)
                         new_value = response
-                        record.medical_record = new_value
+                        user_record.medical_record = new_value
                         DatabaseHandler.save()
                         response_data = {
                             "response": with_followup(f"Your medical record has been updated from '{old_value}' to '{new_value}'."),
@@ -136,11 +149,10 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         }
 
                     case 6:
-                        intent = DatabaseHandler.find_intent(email)
-                        old_value = intent.weight_goal
+                        old_value = user_intent.weight_goal
                         response = await Deepseek.send(f"{intentPrompt}\n\n{message}", email, 0)
                         new_value = float(response)
-                        intent.weight_goal = new_value
+                        user_intent.weight_goal = new_value
                         DatabaseHandler.save()
                         response_data = {
                             "response": with_followup(f"Your weight goal has been updated from {old_value} kg to {new_value} kg."),
@@ -149,11 +161,10 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         }
 
                     case 7:
-                        intent = DatabaseHandler.find_intent(email)
-                        old_value = intent.general_goal
+                        old_value = user_intent.general_goal
                         response = await Deepseek.send(f"{intentPrompt}\n\n{message}", email, 0)
                         new_value = response
-                        intent.general_goal = new_value
+                        user_intent.general_goal = new_value
                         DatabaseHandler.save()
                         response_data = {
                             "response": with_followup(f"Your general goal has been updated from '{old_value}' to '{new_value}'."),
@@ -161,7 +172,6 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                             "intent": "general_goal"
                         }
                     case 8:
-                        intake = DatabaseHandler.find_intake(email)
                         response = await Deepseek.send(f"{intentPrompt}\n\n{message}", email, 0)
 
                         try:
@@ -172,10 +182,10 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                             except Exception as e:
                                 response_dict = {"error": "Invalid response format", "raw": response}
 
-                        intake.foods = response_dict['foods']
-                        intake.carbohydrate = response_dict['carbohydrate']
-                        intake.fat = response_dict['fat']
-                        intake.protein = response_dict['protein']
+                        user_intake.foods = response_dict['foods']
+                        user_intake.carbohydrate = response_dict['carbohydrate']
+                        user_intake.fat = response_dict['fat']
+                        user_intake.protein = response_dict['protein']
                         DatabaseHandler.save()
                         response_data = {
                             "response": with_followup(f"Your calorie tracker has been updated!"),
