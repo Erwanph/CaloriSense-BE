@@ -135,10 +135,16 @@ class IntentPredictor:
                     f"My current intake are: carbohydrate {intake.carbohydrate}g, protein {intake.protein}g, and fat {intake.fat}g. "
                     f"Please parse the user's message to identify new food items and their quantities. "
                     f"If the user mentions a food with a quantity (e.g., 'nasi goreng 1'), keep the quantity with the food name. "
+                    f"Please use these realistic nutrition values for common foods:\n"
+                    f"- Nasi goreng (1 plate): 45g carbohydrate, 8g protein, 15g fat\n"
+                    f"- White rice (1 cup): 45g carbohydrate, 4g protein, 0.5g fat\n"
+                    f"- Chicken breast (100g): 0g carbohydrate, 31g protein, 3.6g fat\n"
+                    f"- Egg (1 large): 0.6g carbohydrate, 6g protein, 5g fat\n"
                     f"Please answer with the format: "
-                    '{"foods":["food1","food2 quantity"],"protein":130,"fat":130,"carbohydrate":250}'
-                    f"Do not add any sentence outside of the curly brackets. "
-                    f"Please properly identify unique food items with their quantities and calculate the total calories."
+                    '{"foods":["food1","food2 quantity"],"protein":X,"fat":Y,"carbohydrate":Z}'
+                    f" where X, Y, and Z are calculated values based on the actual foods identified, not these example values."
+                    f" Do not add any sentence outside of the curly brackets."
+                    f" If you don't know the exact nutrition values for a specific food, use your knowledge to provide realistic estimates."
                 )
             case _:
                 return "Invalid intent index."
