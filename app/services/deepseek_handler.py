@@ -15,14 +15,14 @@ from dateutil.relativedelta import relativedelta
 # Load environment variables
 load_dotenv()
 
-# Tambahkan cache untuk menyimpan respons API
-API_CACHE = cachetools.TTLCache(maxsize=100, ttl=60*5)  # Cache bertahan 5 menit
+# Add cache to store API responses
+API_CACHE = cachetools.TTLCache(maxsize=100, ttl=60*5)  # Cache lasts 5 minutes
 
 class DeepseekAPI:
     """Helper class to interact with the DeepSeek API"""
     API_URL = "https://api.deepseek.com/chat/completions"
     
-    # Reuse HTTP client untuk menghemat waktu pembuatan koneksi
+    # Reuse HTTP client to save connection setup time
     _http_client = None
     
     @classmethod
@@ -69,7 +69,7 @@ class DeepseekAPI:
             response = await client.post(cls.API_URL, headers=headers, json=payload)
         except httpx.ReadTimeout:
             raise Exception("DeepSeek API timed out. Please try again later.")
-        
+
         if response.status_code != 200:
             raise Exception(f"DeepSeek API error: {response.status_code} - {response.text}")
 
@@ -87,7 +87,7 @@ class DeepseekAPI:
 class Deepseek:
     """Class to handle DeepSeek chat interactions and session management"""
     
-    # Cache untuk hasil RDI
+    # Cache for RDI results
     _rdi_cache = {}
     
     @classmethod
@@ -148,8 +148,8 @@ class Deepseek:
         # Add assistant response to session
         session.add_assistant_response(response)
         
-        # Save updated database - ini bisa ditunda hingga websocket handler menyimpannya
-        # Tidak perlu menyimpan database setiap kali mengirim pesan
+        # Database saving is delayed until the websocket handler saves it
+        # No need to save the database every time a message is sent
         # DatabaseHandler.save()
         
         return response

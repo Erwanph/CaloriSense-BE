@@ -1,5 +1,6 @@
-from app.services.deepseek_handler import Deepseek, DeepseekAPI
-from app.services.database_handler import DatabaseHandler
+import asyncio
+from app.services.deepseek_handler import DeepseekAPI
+from app.services.auth_handler import UserDataCache
 
 possible_intentions = [
     "asking only (e.g. asking about food nutrition, what food to eat, etc)",
@@ -21,23 +22,44 @@ Respond with a single digit only.
 '''
 
 class IntentPredictor:
+    # Cache intent prediction results to avoid redundant API calls
+    _intent_prediction_cache = {}
+    
     @staticmethod
     async def predict(message: str):
+        # Check cache first
+        if message in IntentPredictor._intent_prediction_cache:
+            return IntentPredictor._intent_prediction_cache[message]
+            
         messages = [
             {"role": "system", "content": intent_system_prompt},
             {"role": "user", "content": message}
         ]
         response = await DeepseekAPI.send(messages, temperature=0)
         try:
-            return int(response.strip())
+            intent_idx = int(response.strip())
+            # Cache the result
+            IntentPredictor._intent_prediction_cache[message] = intent_idx
+            return intent_idx
         except ValueError:
             return 0 
     
     @staticmethod
     def intent_prompt(intentIdx: int, email: str):
-        record = DatabaseHandler.find_health_record(email)
-        intent = DatabaseHandler.find_intent(email)
-        intake = DatabaseHandler.find_intake(email)
+        # Get user data from cache
+        user_cache = UserDataCache.get_instance()
+        cached_data = user_cache.get_user_data(email)
+        
+        if cached_data:
+            record = cached_data["health_record"]
+            intent = cached_data["intent"]
+            intake = cached_data["intake"]
+        else:
+            # Fallback to database if cache is empty
+            from app.services.database_handler import DatabaseHandler
+            record = DatabaseHandler.find_health_record(email)
+            intent = DatabaseHandler.find_intent(email)
+            intake = DatabaseHandler.find_intake(email)
 
         match intentIdx:
             case 0:

@@ -1,10 +1,12 @@
 import asyncio
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import json
+from datetime import datetime
 
 from app.services.intent_predictor import IntentPredictor
 from app.services.deepseek_handler import Deepseek
 from app.services.database_handler import DatabaseHandler
+from app.services.auth_handler import UserDataCache
 
 router = APIRouter()
 
@@ -31,10 +33,42 @@ manager = ConnectionManager()
 async def websocket_endpoint(websocket: WebSocket, email: str):
     await manager.connect(websocket, email)
     
-    # Caching untuk data pengguna - mengurangi pembacaan database yang berulang
-    user_record = None
-    user_intent = None
-    user_intake = None
+    # Get reference to the global user data cache
+    user_cache = UserDataCache.get_instance()
+    
+    # Load user data from cache immediately at connection time
+    cached_data = user_cache.get_user_data(email)
+    
+    # If cache is empty, initialize it (fallback mechanism)
+    if not cached_data:
+        # Initialize database
+        DatabaseHandler.init()
+        
+        # Load user data
+        user_record = DatabaseHandler.find_health_record(email)
+        user_intent = DatabaseHandler.find_intent(email)
+        user_intake = DatabaseHandler.find_intake(email)
+        
+        # Store for direct access
+        cached_data = {
+            "health_record": user_record,
+            "intent": user_intent,
+            "intake": user_intake
+        }
+        
+        # Update cache
+        user_cache.set_user_data(email, cached_data)
+    else:
+        # Extract data from cache
+        user_record = cached_data["health_record"]
+        user_intent = cached_data["intent"]
+        user_intake = cached_data["intake"]
+        
+        # Make sure we have today's intake (it could be from a previous day in cache)
+        today = datetime.now().date()
+        if not user_intake or user_intake.date != today:
+            user_intake = DatabaseHandler.find_intake(email)
+            cached_data["intake"] = user_intake
     
     try:
         while True:
@@ -50,7 +84,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                 
             message = message_data["message"]
             
-            # Send processing notification segera
+            # Send processing notification immediately
             await manager.send_message(email, {
                 "status": "processing",
                 "message": "Processing your request..."
@@ -58,18 +92,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
             
             # Process the message
             try:
-                # Load user data hanya jika belum di-cache
-                if not user_record:
-                    user_record = DatabaseHandler.find_health_record(email)
-                if not user_intent:
-                    user_intent = DatabaseHandler.find_intent(email)
-                if not user_intake:
-                    user_intake = DatabaseHandler.find_intake(email)
-                
-                # Prediksi intent dan kirim ke DeepSeek dilakukan secara paralel
-                intent_task = asyncio.create_task(IntentPredictor.predict(message))
-                
-                # Tunggu hasil prediksi intent
+                # Predict intent
                 intentionIdx = await IntentPredictor.predict(message)
                 intentPrompt = IntentPredictor.intent_prompt(intentionIdx, email) 
 
@@ -78,7 +101,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
 
                 response_data = {}
                 
-                # Gunakan asyncio.gather untuk mengirim ke Deepseek
+                # Use user data from cache instead of database queries
                 match intentionIdx:
                     case 0:
                         response = await Deepseek.send(message, email)
