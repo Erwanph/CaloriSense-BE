@@ -29,7 +29,8 @@ class DeepseekAPI:
     async def get_client(cls):
         """Get or create an HTTP client with appropriate timeout"""
         if cls._http_client is None:
-            timeout = httpx.Timeout(30.0)
+            # Increase timeout from 30.0 to 60.0 seconds to prevent timeouts
+            timeout = httpx.Timeout(60.0)
             cls._http_client = httpx.AsyncClient(timeout=timeout)
         return cls._http_client
     
@@ -50,7 +51,7 @@ class DeepseekAPI:
             return cached_result
         
         headers = {
-            "Content-Type": "application/json",
+            "Content-Type": "application/json", 
             "Authorization": f"Bearer {os.environ.get('DEEPSEEK_API_KEY')}"
         }
 
@@ -65,23 +66,39 @@ class DeepseekAPI:
         client = await cls.get_client()
         start_time = time.time()
         
-        try:
-            response = await client.post(cls.API_URL, headers=headers, json=payload)
-        except httpx.ReadTimeout:
-            raise Exception("DeepSeek API timed out. Please try again later.")
-
-        if response.status_code != 200:
-            raise Exception(f"DeepSeek API error: {response.status_code} - {response.text}")
-
-        data = response.json()
-        try:
-            result = data["choices"][0]["message"]["content"]
-            # Cache the result
-            API_CACHE[cache_key] = result
-            print(f"API call took {time.time() - start_time:.2f} seconds")
-            return result
-        except (KeyError, IndexError):
-            raise Exception(f"Unexpected response format: {data}")
+        # Implement retry logic - try up to 3 times with exponential backoff
+        max_retries = 3
+        retry_delay = 1  # Start with 1 second delay
+        
+        for attempt in range(max_retries):
+            try:
+                response = await client.post(cls.API_URL, headers=headers, json=payload)
+                
+                if response.status_code != 200:
+                    raise Exception(f"DeepSeek API error: {response.status_code} - {response.text}")
+                    
+                data = response.json()
+                try:
+                    result = data["choices"][0]["message"]["content"]
+                    # Cache the result
+                    API_CACHE[cache_key] = result
+                    print(f"API call took {time.time() - start_time:.2f} seconds")
+                    return result
+                except (KeyError, IndexError):
+                    raise Exception(f"Unexpected response format: {data}")
+                    
+            except httpx.ReadTimeout:
+                if attempt < max_retries - 1:
+                    # If not the last attempt, wait and retry
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                    print(f"DeepSeek API timed out. Retrying attempt {attempt + 2}/{max_retries}")
+                else:
+                    # On the last attempt, raise the exception
+                    raise Exception("DeepSeek API timed out after multiple attempts. Please try again later.")
+            except Exception as e:
+                # For other exceptions, don't retry
+                raise e
 
 
 class Deepseek:
