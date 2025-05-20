@@ -205,13 +205,18 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                             except Exception as e:
                                 response_dict = {"error": "Invalid response format", "raw": response}
 
+                        # Properly handle the food items (avoid duplicates)
                         user_intake.foods = response_dict['foods']
                         user_intake.carbohydrate = response_dict['carbohydrate']
                         user_intake.fat = response_dict['fat']
                         user_intake.protein = response_dict['protein']
                         DatabaseHandler.save()
+                        
+                        # Format food items for display
+                        food_list = ", ".join(user_intake.foods) if isinstance(user_intake.foods, list) else user_intake.foods
+                        
                         response_data = {
-                            "response": with_followup(f"Your calorie tracker has been updated!"),
+                            "response": with_followup(f"Your calorie tracker has been updated! You ate {food_list} with {user_intake.carbohydrate}g carbohydrate, {user_intake.fat}g fat, {user_intake.protein}g protein."),
                             "info_updated": True,
                             "intent": "food_intake"
                         }

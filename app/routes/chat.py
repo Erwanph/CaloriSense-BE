@@ -133,7 +133,7 @@ async def answer(email: str, message: str):
             intake.protein = response_dict['protein']
             DatabaseHandler.save()
             return {
-                "response": with_followup(f"Your calorie tracker has been updated!."),
+                "response": with_followup(f"Your calorie tracker has been updated!. You ate {intake.foods} with {intake.carbohydrate} carbohydrate, {intake.fat} fat, {intake.protein} protein"),
                 "info_updated": True,
                 "intent": "food_intake"
             }

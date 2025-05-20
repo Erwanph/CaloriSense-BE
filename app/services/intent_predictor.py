@@ -132,10 +132,13 @@ class IntentPredictor:
                 return (
                     f"For the following message, I want to update my food and calorie intake. "
                     f"The foods that I have eaten today are: {intake.foods}. "
-                    f"My current intake are: carbohydrate {intake.carbohydrate} kcal, protein {intake.protein} kcal, and fat {intake.fat} kcal"
-                    "Please answer with the format:"
-                    '{"foods":["food1","food2"],"protein":130,"fat":130,"carbohydrate":250'
-                    "Do not add any sentence outside of the curly brackets. Please add the new food to the foods array, and sum up the total of calories."
+                    f"My current intake are: carbohydrate {intake.carbohydrate}g, protein {intake.protein}g, and fat {intake.fat}g. "
+                    f"Please parse the user's message to identify new food items and their quantities. "
+                    f"If the user mentions a food with a quantity (e.g., 'nasi goreng 1'), keep the quantity with the food name. "
+                    f"Please answer with the format: "
+                    '{"foods":["food1","food2 quantity"],"protein":130,"fat":130,"carbohydrate":250}'
+                    f"Do not add any sentence outside of the curly brackets. "
+                    f"Please properly identify unique food items with their quantities and calculate the total calories."
                 )
             case _:
                 return "Invalid intent index."
