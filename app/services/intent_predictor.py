@@ -75,7 +75,7 @@ class IntentPredictor:
         # Create default objects if still None
         if record is None:
             record = HealthRecord(email=email, weight=70, height=170, food_allergies="None", 
-                                 daily_activities="Sedentary", medical_record="None")
+                                 daily_activities="Sedentary",daily_exercises="Active", medical_record="None")
         
         if intent is None:
             intent = Intent(email=email, weight_goal=70, general_goal="Maintain weight")
