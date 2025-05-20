@@ -78,7 +78,7 @@ class IntentPredictor:
                                  daily_activities="Sedentary",daily_exercises="Active", medical_record="None")
         
         if intent is None:
-            intent = Intent(email=email, weight_goal=70, general_goal="Maintain weight")
+            intent = Intent(email=email, weight_goal=70, general_goal="Maintain weight", rdi=1800)
             
         if intake is None:
             intake = Intake(email=email, foods=[], carbohydrate=0, protein=0, fat=0)
