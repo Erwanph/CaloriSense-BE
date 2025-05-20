@@ -215,6 +215,35 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                             "info_updated": True,
                             "intent": "food_intake"
                         }
+                    
+                    case 9:
+                        # User is asking for health record information
+                        record_info = (
+                            f"Here is your health record:\n"
+                            f"- Weight: {user_record.weight} kg\n"
+                            f"- Height: {user_record.height} cm\n"
+                            f"- Allergies: {user_record.food_allergies}\n"
+                            f"- Daily Activities: {user_record.daily_activities}\n"
+                            f"- Daily Exercises: {user_record.daily_exercises}\n"
+                            f"- Medical Record: {user_record.medical_record}"
+                        )
+                        response_data = {
+                            "response": with_followup(record_info),
+                            "info_updated": False,
+                            "intent": "health_record_info"
+                        }
+
+                    case 10:
+                        # User is asking for personal information
+                        name = getattr(user_record, "name", None)
+                        personal_info = f"Here is your personal information:\n- Email: {email}"
+                        if name:
+                            personal_info += f"\n- Name: {name}"
+                        response_data = {
+                            "response": with_followup(personal_info),
+                            "info_updated": False,
+                            "intent": "personal_info"
+                        }
 
                     case _:
                         DatabaseHandler.save()

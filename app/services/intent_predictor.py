@@ -14,7 +14,10 @@ possible_intentions = [
     "update medical records",
     "update weight goal",
     "update general goal",
-    "telling you what food they eat with the intention to log their food. Be aware this occurs rarely and only answer this if you are confident."
+    "telling you what food they eat with the intention to log their food. Be aware this occurs rarely and only answer this if you are confident.",
+    "asking health records",
+    "asking personal information (e.g. name, date of birth, email, etc)"
+
 ]
 
 intent_system_prompt = f'''
@@ -136,6 +139,27 @@ class IntentPredictor:
                     "Please answer with the format:"
                     '{"foods":["food1","food2"],"protein":130,"fat":130,"carbohydrate":250'
                     "Do not add any sentence outside of the curly brackets. Please add the new food to the foods array, and sum up the total of calories."
+                )
+            case 9:
+                return (
+                    f"For the following message, the user is asking about their health records. "
+                    f"Their current records are:\n"
+                    f"- Weight: {record.weight} kg\n"
+                    f"- Height: {record.height} cm\n"
+                    f"- Food allergies: {record.food_allergies}\n"
+                    f"- Daily activities: {record.daily_activities}\n"
+                    f"- Daily exercises: {record.daily_exercises}\n"
+                    f"- Medical records: {record.medical_record}\n\n"
+                    f"Please answer the user's question using the data above. "
+                    f"If the question is unclear, ask for clarification. "
+                    f"Do not make up data. Only answer using the provided values."
+                )
+            case 10:
+                return (
+                    f"For the following message, the user is asking about their personal information. "
+                    f"Their email is: {email}. "
+                    f"If you have access to the user's name, include it. If not, respond with only the email. "
+                    f"Do not make up any information. Only answer with known values."
                 )
             case _:
                 return "Invalid intent index."
