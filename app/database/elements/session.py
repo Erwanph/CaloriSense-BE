@@ -33,7 +33,7 @@ class Session:
             }
         )
     
-    def add_assisant_response(self, message):
+    def add_assistant_response(self, message):
         self.messages.append(
             {
                 "role": "assistant",

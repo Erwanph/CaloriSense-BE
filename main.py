@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import auth, chat, user
 from app.services.database_handler import DatabaseHandler
+from app.services.websocket import router as websocket_router
 
 app = FastAPI(
     title="CaloriSense",
@@ -18,6 +19,8 @@ app.add_middleware(
 )
 
 DatabaseHandler.init()
+# Tambahkan router WebSocket
+app.include_router(websocket_router, prefix="/chat")
 
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])

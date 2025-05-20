@@ -10,7 +10,7 @@ from datetime import datetime
 from fastapi.security import HTTPBearer
 
 from app.services.database_handler import DatabaseHandler
-from app.services.deepseek_handler import calculate_rdi
+from app.services.deepseek_handler import Deepseek
 
 router = APIRouter()
 auth_handler = AuthHandler()
@@ -120,7 +120,7 @@ async def initialize_user(
     )
     DatabaseHandler.health_record.append(new_health)
 
-    rdi = await calculate_rdi(
+    rdi = await Deepseek.calculate_rdi(
         data.weight,
         data.height,
         data.date_of_birth,

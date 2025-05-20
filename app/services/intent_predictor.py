@@ -1,12 +1,16 @@
-from app.services.deepseek_handler import send
-from app.services.database_handler import DatabaseHandler
+import asyncio
+from app.services.deepseek_handler import DeepseekAPI
+from app.services.auth_handler import UserDataCache
+from app.database.elements.health_record import HealthRecord
+from app.database.elements.intent import Intent
+from app.database.elements.intake import Intake
 
 possible_intentions = [
     "asking only (e.g. asking about food nutrition, what food to eat, etc)",
     "change weight",
     "change height",
     "update allergies",
-    "update activities",
+    "update activities", 
     "update medical records",
     "update weight goal",
     "update general goal",
@@ -21,19 +25,63 @@ Respond with a single digit only.
 '''
 
 class IntentPredictor:
+    # Cache intent prediction results to avoid redundant API calls
+    _intent_prediction_cache = {}
+    
     @staticmethod
     async def predict(message: str):
-        respond = await send([
+        # Check cache first
+        if message in IntentPredictor._intent_prediction_cache:
+            return IntentPredictor._intent_prediction_cache[message]
+            
+        messages = [
             {"role": "system", "content": intent_system_prompt},
             {"role": "user", "content": message}
-        ], 0)
-        return int(respond)
+        ]
+        try:
+            response = await DeepseekAPI.send(messages, temperature=0)
+            intent_idx = int(response.strip())
+            # Cache the result
+            IntentPredictor._intent_prediction_cache[message] = intent_idx
+            return intent_idx
+        except ValueError:
+            return 0 
+        except Exception as e:
+            print(f"Error predicting intent: {e}")
+            return 0  # Default to asking mode on any error
     
     @staticmethod
     def intent_prompt(intentIdx: int, email: str):
-        record = DatabaseHandler.find_health_record(email)
-        intent = DatabaseHandler.find_intent(email)
-        intake = DatabaseHandler.find_intake(email)
+        # Get user data from cache
+        user_cache = UserDataCache.get_instance()
+        cached_data = user_cache.get_user_data(email)
+        
+        # Initialize default objects in case data is not found
+        record = None
+        intent = None
+        intake = None
+        
+        if cached_data:
+            record = cached_data.get("health_record")
+            intent = cached_data.get("intent")
+            intake = cached_data.get("intake")
+        else:
+            # Fallback to database if cache is empty
+            from app.services.database_handler import DatabaseHandler
+            record = DatabaseHandler.find_health_record(email)
+            intent = DatabaseHandler.find_intent(email)
+            intake = DatabaseHandler.find_intake(email)
+        
+        # Create default objects if still None
+        if record is None:
+            record = HealthRecord(email=email, weight=70, height=170, food_allergies="None", 
+                                 daily_activities="Sedentary", medical_record="None")
+        
+        if intent is None:
+            intent = Intent(email=email, weight_goal=70, general_goal="Maintain weight")
+            
+        if intake is None:
+            intake = Intake(email=email, foods=[], carbohydrate=0, protein=0, fat=0)
 
         match intentIdx:
             case 0:
