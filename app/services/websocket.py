@@ -270,6 +270,12 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                     case 8:
                         response = await Deepseek.send(f"{intentPrompt}\n\n{message}", email, 0)
 
+                        # Strip markdown block if exists
+                        if response.startswith("```"):
+                            response = response.strip("`")  # removes all backticks
+                            response = response.strip("json\n")  # removes 'json' label and newline
+                            response = response.strip()
+
                         try:
                             response_dict = json.loads(response)
                         except json.JSONDecodeError:
@@ -278,7 +284,8 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                             except Exception as e:
                                 response_dict = {"error": "Invalid response format", "raw": response}
 
-                        # Properly handle the food items (avoid duplicates)
+                        if not all(k in response_dict for k in ["foods", "carbohydrate", "fat", "protein"]):
+                            raise ValueError(f"Missing expected keys in LLM response: {response_dict}")
                         user_intake.foods = response_dict['foods']
                         user_intake.carbohydrate = response_dict['carbohydrate']
                         user_intake.fat = response_dict['fat']
