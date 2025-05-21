@@ -84,7 +84,7 @@ class IntentPredictor:
             intent = Intent(email=email, weight_goal=70, general_goal="Maintain weight", rdi=1800)
             
         if intake is None:
-            intake = Intake(email=email, foods=[], carbohydrate=0, protein=0, fat=0)
+            intake = Intake(date=2025-12-12,foods=[], carbohydrate=0, protein=0, fat=0)
 
         match intentIdx:
             case 0:
@@ -133,22 +133,24 @@ class IntentPredictor:
                 )
             case 8:
                 return (
-                    f"For the following message, I want to update my food and calorie intake. "
-                    f"The foods that I have eaten today are: {intake.foods}. "
-                    f"My current intake are: carbohydrate {intake.carbohydrate}g, protein {intake.protein}g, and fat {intake.fat}g. "
-                    f"Please parse the user's message to identify new food items and their quantities. "
-                    f"If the user mentions a food with a quantity (e.g., 'nasi goreng 1'), keep the quantity with the food name. "
-                    f"Please use these realistic nutrition values for common foods:\n"
-                    f"- Nasi goreng (1 plate): 45g carbohydrate, 8g protein, 15g fat\n"
-                    f"- White rice (1 cup): 45g carbohydrate, 4g protein, 0.5g fat\n"
-                    f"- Chicken breast (100g): 0g carbohydrate, 31g protein, 3.6g fat\n"
-                    f"- Egg (1 large): 0.6g carbohydrate, 6g protein, 5g fat\n"
-                    f"Please answer with the format: "
-                    '{"foods":["food1","food2 quantity"],"protein":X,"fat":Y,"carbohydrate":Z}'
-                    f" where X, Y, and Z are calculated values based on the actual foods identified, not these example values."
-                    f" Do not add any sentence outside of the curly brackets."
-                    f" If you don't know the exact nutrition values for a specific food, use your knowledge to provide realistic estimates."
+                    f"You are a food intake assistant. The user wants to update their daily food intake. "
+                    f"Today's foods they've already entered are: {intake.foods}. "
+                    f"Their current intake is: carbohydrate {intake.carbohydrate}g, protein {intake.protein}g, and fat {intake.fat}g. "
+                    f"The user will now provide a message containing **new foods** they have eaten today. "
+                    f"Your task is to:\n"
+                    f"1. Extract each food item and its quantity (if mentioned).\n"
+                    f"2. Estimate its nutrition based on realistic values. Use these examples:\n"
+                    f"   - Nasi goreng (1 plate): 45g carbs, 8g protein, 15g fat\n"
+                    f"   - White rice (1 cup): 45g carbs, 4g protein, 0.5g fat\n"
+                    f"   - Chicken breast (100g): 0g carbs, 31g protein, 3.6g fat\n"
+                    f"   - Egg (1 large): 0.6g carbs, 6g protein, 5g fat\n"
+                    f"If food is unknown, estimate values realistically.\n"
+                    f"Then, calculate total nutrition for all new foods only.\n"
+                    f"Output in **this exact JSON format**, no extra text:\n"
+                    f'{{"foods":["food1 quantity","food2 quantity"],"protein":X,"fat":Y,"carbohydrate":Z}}\n'
+                    f"Make sure X, Y, Z are correct sums of the foods listed."
                 )
+
             case 9:
                 return (
                     f"For the following message, the user is asking about their health records. "
