@@ -34,6 +34,33 @@
             align-self: flex-start;
             margin-right: 50px;
         }
+        .typing-indicator {
+            display: inline-block;
+            font-size: 10px;
+            margin-left: 5px;
+        }
+        .typing-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #555;
+            margin: 0 2px;
+            animation: typing-dot 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes typing-dot {
+            0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
         #message-form {
             display: flex;
         }
@@ -81,6 +108,7 @@
     
     <script>
         let socket = null;
+        let currentBotMessage = null;
         
         const statusDiv = document.getElementById('status');
         const chatbox = document.getElementById('chatbox');
@@ -127,7 +155,27 @@
                     statusDiv.textContent = 'Terhubung ke chatbot';
                 }
                 else if (response.status === 'completed') {
+                    // For backward compatibility
                     addMessage(response.response, 'bot');
+                    statusDiv.textContent = 'Terhubung ke chatbot';
+                }
+                else if (response.status === 'streaming_start') {
+                    // Start a new bot message for streaming
+                    currentBotMessage = createEmptyBotMessage();
+                    statusDiv.textContent = 'Bot sedang menulis...';
+                }
+                else if (response.status === 'streaming_token') {
+                    // Append token to current bot message
+                    if (currentBotMessage) {
+                        appendToBotMessage(currentBotMessage, response.token);
+                    }
+                }
+                else if (response.status === 'streaming_end') {
+                    // Finalize the streaming message
+                    if (currentBotMessage) {
+                        finalizeBotMessage(currentBotMessage);
+                        currentBotMessage = null;
+                    }
                     statusDiv.textContent = 'Terhubung ke chatbot';
                 }
             };
@@ -163,10 +211,76 @@
                 
                 // Reset input
                 messageInput.value = '';
+                
+                // Disable input while waiting for response
+                messageInput.disabled = true;
+                sendBtn.disabled = true;
             } else {
                 alert('Koneksi terputus. Silakan hubungkan kembali.');
             }
         });
+        
+        // Function to create an empty bot message with typing indicator
+        function createEmptyBotMessage() {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', 'bot-message');
+            
+            // Add typing indicator
+            const typingIndicator = document.createElement('span');
+            typingIndicator.classList.add('typing-indicator');
+            for (let i = 0; i < 3; i++) {
+                const dot = document.createElement('span');
+                dot.classList.add('typing-dot');
+                typingIndicator.appendChild(dot);
+            }
+            
+            messageElement.appendChild(typingIndicator);
+            chatbox.appendChild(messageElement);
+            
+            // Auto-scroll to bottom
+            chatbox.scrollTop = chatbox.scrollHeight;
+            
+            return messageElement;
+        }
+        
+        // Function to append text to an existing bot message
+        function appendToBotMessage(messageElement, text) {
+            // Remove typing indicator if it exists
+            const typingIndicator = messageElement.querySelector('.typing-indicator');
+            if (typingIndicator) {
+                messageElement.removeChild(typingIndicator);
+            }
+            
+            // Get existing content
+            let currentContent = messageElement.innerHTML;
+            // Remove typing indicator HTML if present
+            currentContent = currentContent.replace(/<span class="typing-indicator">.*?<\/span>/g, '');
+            
+            // Format newlines in the text
+            const formattedText = text.replace(/\n/g, '<br>');
+            
+            // Update content
+            messageElement.innerHTML = currentContent + formattedText;
+            
+            // Auto-scroll to bottom
+            chatbox.scrollTop = chatbox.scrollHeight;
+            
+            // Re-enable input during streaming so user can type their next message
+            messageInput.disabled = false;
+            sendBtn.disabled = false;
+        }
+        
+        // Function to finalize a bot message (remove typing indicator)
+        function finalizeBotMessage(messageElement) {
+            // Remove typing indicator if it exists
+            const typingIndicator = messageElement.querySelector('.typing-indicator');
+            if (typingIndicator) {
+                messageElement.removeChild(typingIndicator);
+            }
+            
+            // Auto-scroll to bottom one last time
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
         
         // Fungsi untuk menambahkan pesan ke chatbox
         function addMessage(text, sender) {
@@ -187,6 +301,12 @@
             
             // Auto-scroll to bottom
             chatbox.scrollTop = chatbox.scrollHeight;
+            
+            // Re-enable input after message is added (for non-streaming responses)
+            if (sender === 'bot') {
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+            }
         }
     </script>
 </body>
