@@ -2,7 +2,7 @@ import asyncio
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import json
 from datetime import datetime
-
+import json
 from app.services.intent_predictor import IntentPredictor
 from app.services.deepseek_handler import Deepseek
 from app.services.database_handler import DatabaseHandler
@@ -99,15 +99,31 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                 def with_followup(text: str):
                     return f"✅ Done! Would you like to do anything else?\n\n{text}"
 
+                # Send the beginning of streaming message
+                await manager.send_message(email, {
+                    "status": "streaming_start",
+                    "intent": intentionIdx
+                })
+                
                 response_data = {}
+                final_response = ""
                 
                 # Use user data from cache instead of database queries
                 match intentionIdx:
                     case 0:
-                        response = await Deepseek.send(message, email)
+                        # Regular chat - use streaming
+                        stream_generator = Deepseek.send_stream(message, email)
+                        async for token in stream_generator:
+                            # Send each token as it arrives
+                            await manager.send_message(email, {
+                                "status": "streaming_token",
+                                "token": token
+                            })
+                            final_response += token
+                        
                         DatabaseHandler.save()
                         response_data = {
-                            "response": response, 
+                            "response": final_response, 
                             "info_updated": False
                         }
 
@@ -117,11 +133,19 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         new_value = float(response)
                         user_record.weight = new_value
                         DatabaseHandler.save()
+                        final_response = with_followup(f"Your weight has been updated from {old_value} kg to {new_value} kg.")
                         response_data = {
-                            "response": with_followup(f"Your weight has been updated from {old_value} kg to {new_value} kg."),
+                            "response": final_response,
                             "info_updated": True,
                             "intent": "weight"
                         }
+                        # Send streaming response for better user experience
+                        for word in final_response.split():
+                            await manager.send_message(email, {
+                                "status": "streaming_token",
+                                "token": word + " "
+                            })
+                            await asyncio.sleep(0.05)  # Small delay between words
 
                     case 2:
                         old_value = user_record.height
@@ -129,11 +153,19 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         new_value = float(response)
                         user_record.height = new_value
                         DatabaseHandler.save()
+                        final_response = with_followup(f"Your height has been updated from {old_value} cm to {new_value} cm.")
                         response_data = {
-                            "response": with_followup(f"Your height has been updated from {old_value} cm to {new_value} cm."),
+                            "response": final_response,
                             "info_updated": True,
                             "intent": "height"
                         }
+                        # Send streaming response
+                        for word in final_response.split():
+                            await manager.send_message(email, {
+                                "status": "streaming_token",
+                                "token": word + " "
+                            })
+                            await asyncio.sleep(0.05)
 
                     case 3:
                         old_value = user_record.food_allergies
@@ -141,11 +173,19 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         new_value = response
                         user_record.food_allergies = new_value
                         DatabaseHandler.save()
+                        final_response = with_followup(f"Your food allergies information has been updated from '{old_value}' to '{new_value}'.")
                         response_data = {
-                            "response": with_followup(f"Your food allergies information has been updated from '{old_value}' to '{new_value}'."),
+                            "response": final_response,
                             "info_updated": True,
                             "intent": "food_allergies"
                         }
+                        # Send streaming response
+                        for word in final_response.split():
+                            await manager.send_message(email, {
+                                "status": "streaming_token",
+                                "token": word + " "
+                            })
+                            await asyncio.sleep(0.05)
 
                     case 4:
                         old_value = user_record.daily_activities
@@ -153,11 +193,19 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         new_value = response
                         user_record.daily_activities = new_value
                         DatabaseHandler.save()
+                        final_response = with_followup(f"Your daily activities have been updated from '{old_value}' to '{new_value}'.")
                         response_data = {
-                            "response": with_followup(f"Your daily activities have been updated from '{old_value}' to '{new_value}'."),
+                            "response": final_response,
                             "info_updated": True,
                             "intent": "daily_activities"
                         }
+                        # Send streaming response
+                        for word in final_response.split():
+                            await manager.send_message(email, {
+                                "status": "streaming_token",
+                                "token": word + " "
+                            })
+                            await asyncio.sleep(0.05)
 
                     case 5:
                         old_value = user_record.medical_record
@@ -165,11 +213,19 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         new_value = response
                         user_record.medical_record = new_value
                         DatabaseHandler.save()
+                        final_response = with_followup(f"Your medical record has been updated from '{old_value}' to '{new_value}'.")
                         response_data = {
-                            "response": with_followup(f"Your medical record has been updated from '{old_value}' to '{new_value}'."),
+                            "response": final_response,
                             "info_updated": True,
                             "intent": "medical_record"
                         }
+                        # Send streaming response
+                        for word in final_response.split():
+                            await manager.send_message(email, {
+                                "status": "streaming_token",
+                                "token": word + " "
+                            })
+                            await asyncio.sleep(0.05)
 
                     case 6:
                         old_value = user_intent.weight_goal
@@ -177,11 +233,19 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         new_value = float(response)
                         user_intent.weight_goal = new_value
                         DatabaseHandler.save()
+                        final_response = with_followup(f"Your weight goal has been updated from {old_value} kg to {new_value} kg.")
                         response_data = {
-                            "response": with_followup(f"Your weight goal has been updated from {old_value} kg to {new_value} kg."),
+                            "response": final_response,
                             "info_updated": True,
                             "intent": "weight_goal"
                         }
+                        # Send streaming response
+                        for word in final_response.split():
+                            await manager.send_message(email, {
+                                "status": "streaming_token",
+                                "token": word + " "
+                            })
+                            await asyncio.sleep(0.05)
 
                     case 7:
                         old_value = user_intent.general_goal
@@ -189,11 +253,20 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         new_value = response
                         user_intent.general_goal = new_value
                         DatabaseHandler.save()
+                        final_response = with_followup(f"Your general goal has been updated from '{old_value}' to '{new_value}'.")
                         response_data = {
-                            "response": with_followup(f"Your general goal has been updated from '{old_value}' to '{new_value}'."),
+                            "response": final_response,
                             "info_updated": True,
                             "intent": "general_goal"
                         }
+                        # Send streaming response
+                        for word in final_response.split():
+                            await manager.send_message(email, {
+                                "status": "streaming_token",
+                                "token": word + " "
+                            })
+                            await asyncio.sleep(0.05)
+
                     case 8:
                         response = await Deepseek.send(f"{intentPrompt}\n\n{message}", email, 0)
 
@@ -215,11 +288,19 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         # Format food items for display
                         food_list = ", ".join(user_intake.foods) if isinstance(user_intake.foods, list) else user_intake.foods
                         
+                        final_response = with_followup(f"Your calorie tracker has been updated! You ate {food_list} with {user_intake.carbohydrate}g carbohydrate, {user_intake.fat}g fat, {user_intake.protein}g protein.")
                         response_data = {
-                            "response": with_followup(f"Your calorie tracker has been updated! You ate {food_list} with {user_intake.carbohydrate}g carbohydrate, {user_intake.fat}g fat, {user_intake.protein}g protein."),
+                            "response": final_response,
                             "info_updated": True,
                             "intent": "food_intake"
                         }
+                        # Send streaming response
+                        for word in final_response.split():
+                            await manager.send_message(email, {
+                                "status": "streaming_token",
+                                "token": word + " "
+                            })
+                            await asyncio.sleep(0.05)
                     
                     case 9:
                         # User is asking for health record information
@@ -232,11 +313,19 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                             f"- Daily Exercises: {user_record.daily_exercises}\n"
                             f"- Medical Record: {user_record.medical_record}"
                         )
+                        final_response = with_followup(record_info)
                         response_data = {
-                            "response": with_followup(record_info),
+                            "response": final_response,
                             "info_updated": False,
                             "intent": "health_record_info"
                         }
+                        # Send streaming response
+                        for word in final_response.split():
+                            await manager.send_message(email, {
+                                "status": "streaming_token",
+                                "token": word + " "
+                            })
+                            await asyncio.sleep(0.05)
 
                     case 10:
                         # User is asking for personal information
@@ -244,22 +333,38 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         personal_info = f"Here is your personal information:\n- Email: {email}"
                         if name:
                             personal_info += f"\n- Name: {name}"
+                        final_response = with_followup(personal_info)
                         response_data = {
-                            "response": with_followup(personal_info),
+                            "response": final_response,
                             "info_updated": False,
                             "intent": "personal_info"
                         }
+                        # Send streaming response
+                        for word in final_response.split():
+                            await manager.send_message(email, {
+                                "status": "streaming_token",
+                                "token": word + " "
+                            })
+                            await asyncio.sleep(0.05)
 
                     case _:
                         DatabaseHandler.save()
+                        final_response = "Sorry, your intention couldn't be determined."
                         response_data = {
-                            "response": "Sorry, your intention couldn't be determined.",
+                            "response": final_response,
                             "info_updated": False
                         }
+                        # Send streaming response
+                        for word in final_response.split():
+                            await manager.send_message(email, {
+                                "status": "streaming_token",
+                                "token": word + " "
+                            })
+                            await asyncio.sleep(0.05)
                 
-                # Send the final response back to the client
+                # Send the end of streaming message
                 await manager.send_message(email, {
-                    "status": "completed",
+                    "status": "streaming_end",
                     **response_data
                 })
                 
