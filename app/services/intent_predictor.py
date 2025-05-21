@@ -15,6 +15,7 @@ possible_intentions = [
     "update weight goal",
     "update general goal",
     "telling you what food they eat with the intention to log their food. Be aware this occurs rarely and only answer this if you are confident."
+    # "ask current weight"
 ]
 
 intent_system_prompt = f'''
@@ -145,6 +146,11 @@ class IntentPredictor:
                     f" where X, Y, and Z are calculated values based on the actual foods identified, not these example values."
                     f" Do not add any sentence outside of the curly brackets."
                     f" If you don't know the exact nutrition values for a specific food, use your knowledge to provide realistic estimates."
+                )
+            case 9:
+                return (
+                    f"The user's current weight is {record.weight} kg. "
+                    f"Just respond with: 'Your current weight is {record.weight} kg.' Do not say anything else."
                 )
             case _:
                 return "Invalid intent index."

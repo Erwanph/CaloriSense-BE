@@ -137,6 +137,15 @@ async def answer(email: str, message: str):
                 "info_updated": True,
                 "intent": "food_intake"
             }
+        
+        case 9:
+            record = DatabaseHandler.find_health_record(email)
+            return {
+                "response": f"Your current weight is {record.weight} kg.",
+                "info_updated": False,
+                "intent": "get_weight"
+            }                   
+
 
         case _:
             DatabaseHandler.save()
