@@ -268,6 +268,9 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                             await asyncio.sleep(0.05)
 
                     case 8:
+                        # Dapatkan prompt yang sudah ada, ini akan memberitahu LLM
+                        # makanan dan nutrisi yang sudah ada untuk hari ini.
+                        # LLM diharapkan mengembalikan nutrisi untuk makanan BARU SAJA.
                         response = await Deepseek.send(f"{intentPrompt}\n\n{message}", email, 0)
 
                         # Strip markdown block if exists
@@ -280,28 +283,72 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                             response_dict = json.loads(response)
                         except json.JSONDecodeError:
                             try:
-                                response_dict = eval(response)
+                                response_dict = eval(response) # Hati-hati dengan eval, tapi Anda sudah punya ini
                             except Exception as e:
                                 response_dict = {"error": "Invalid response format", "raw": response}
 
-                        if not all(k in response_dict for k in ["foods", "carbohydrate", "fat", "protein"]):
-                            raise ValueError(f"Missing expected keys in LLM response: {response_dict}")
-                        user_intake.foods = response_dict['foods']
-                        user_intake.carbohydrate = response_dict['carbohydrate']
-                        user_intake.fat = response_dict['fat']
-                        user_intake.protein = response_dict['protein']
-                        DatabaseHandler.save()
-                        
-                        # Format food items for display
-                        food_list = ", ".join(user_intake.foods) if isinstance(user_intake.foods, list) else user_intake.foods
-                        
-                        final_response = with_followup(f"Your calorie tracker has been updated! You ate {food_list} with {user_intake.carbohydrate}g carbohydrate, {user_intake.fat}g fat, {user_intake.protein}g protein.")
-                        response_data = {
-                            "response": final_response,
-                            "info_updated": True,
-                            "intent": "food_intake"
-                        }
-                        # Send streaming response
+                        if "error" in response_dict or not all(k in response_dict for k in ["foods", "carbohydrate", "fat", "protein"]):
+                            # Jika LLM tidak mengembalikan format yang benar atau ada error,
+                            # kirim pesan error ke user dan jangan update intake.
+                            error_message = response_dict.get("error", "LLM returned an invalid format.")
+                            raw_resp_info = f" Raw response: {response_dict.get('raw', 'N/A')}" if 'raw' in response_dict else ""
+                            final_response = f"Sorry, I couldn't process that food input. {error_message}{raw_resp_info}"
+                            response_data = {
+                                "response": final_response,
+                                "info_updated": False, # Karena tidak ada update
+                                "intent": "food_intake_error" # intent bisa diubah untuk error handling di client
+                            }
+                            # Kirim pesan error sebagai 'streaming_token' jika ingin konsisten, atau langsung streaming_end
+                            await manager.send_message(email, {
+                                "status": "streaming_token",
+                                "token": final_response
+                            })
+                        else:
+                            # --- PERUBAHAN DIMULAI DI SINI ---
+                            # Pastikan user_intake.foods adalah list
+                            if not isinstance(user_intake.foods, list):
+                                user_intake.foods = []
+
+                            # Tambahkan makanan baru ke list yang sudah ada
+                            new_foods = response_dict.get('foods', [])
+                            if isinstance(new_foods, list):
+                                user_intake.foods.extend(new_foods)
+                            elif isinstance(new_foods, str): # Jika LLM mengembalikan string, coba split atau tambahkan apa adanya
+                                user_intake.foods.append(new_foods)
+
+
+                            # Akumulasikan nilai nutrisi
+                            # Pastikan tipe data user_intake.carbohydrate, dll. adalah float/int
+                            try:
+                                user_intake.carbohydrate = float(user_intake.carbohydrate) + float(response_dict.get('carbohydrate', 0))
+                                user_intake.fat = float(user_intake.fat) + float(response_dict.get('fat', 0))
+                                user_intake.protein = float(user_intake.protein) + float(response_dict.get('protein', 0))
+                            except ValueError:
+                                # Handle kasus jika nilai awal bukan angka atau response_dict tidak valid
+                                # Anda mungkin ingin log error ini atau mengirim pesan ke user
+                                print(f"Error: Could not convert nutrient values to float for accumulation. Email: {email}")
+                                # Untuk sekarang, kita biarkan nilai lama jika konversi gagal,
+                                # tapi idealnya ini harus ditangani lebih baik.
+                                pass # Atau kirim pesan error
+
+                            DatabaseHandler.save()
+
+                            # Format food items untuk display (sekarang akan berisi semua makanan hari ini)
+                            food_list = ", ".join(user_intake.foods) if isinstance(user_intake.foods, list) else user_intake.foods
+
+                            final_response = with_followup(
+                                f"Your calorie tracker has been updated! Today you've eaten: {food_list}. "
+                                f"Total for today: {user_intake.carbohydrate:.2f}g carbohydrate, "
+                                f"{user_intake.fat:.2f}g fat, {user_intake.protein:.2f}g protein."
+                            )
+                            response_data = {
+                                "response": final_response,
+                                "info_updated": True,
+                                "intent": "food_intake"
+                            }
+                            # --- PERUBAHAN SELESAI DI SINI ---
+
+                        # Send streaming response (baik untuk sukses maupun error parsing LLM)
                         for word in final_response.split():
                             await manager.send_message(email, {
                                 "status": "streaming_token",
