@@ -97,7 +97,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                 intentPrompt = IntentPredictor.intent_prompt(intentionIdx, email) 
 
                 def with_followup(text: str):
-                    return f"✅ Done! Would you like to do anything else?\n\n{text}"
+                    return f"✅ Selesai! Apakah kamu ingin melakukan hal lain?\n\n{text}"
 
                 # Send the beginning of streaming message
                 await manager.send_message(email, {
@@ -133,7 +133,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         new_value = float(response)
                         user_record.weight = new_value
                         DatabaseHandler.save()
-                        final_response = with_followup(f"Your weight has been updated from {old_value} kg to {new_value} kg.")
+                        final_response = with_followup(f"Berat badanmu telah diperbarui dari {old_value} kg menjadi {new_value} kg.")
                         response_data = {
                             "response": final_response,
                             "info_updated": True,
@@ -153,7 +153,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         new_value = float(response)
                         user_record.height = new_value
                         DatabaseHandler.save()
-                        final_response = with_followup(f"Your height has been updated from {old_value} cm to {new_value} cm.")
+                        final_response = with_followup(f"Tinggi badanmu telah diperbarui dari {old_value} cm menjadi {new_value} cm.")
                         response_data = {
                             "response": final_response,
                             "info_updated": True,
@@ -173,7 +173,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         new_value = response
                         user_record.food_allergies = new_value
                         DatabaseHandler.save()
-                        final_response = with_followup(f"Your food allergies information has been updated from '{old_value}' to '{new_value}'.")
+                        final_response = with_followup(f"Informasi alergi makananmu telah diperbarui dari '{old_value}' menjadi '{new_value}'.")
                         response_data = {
                             "response": final_response,
                             "info_updated": True,
@@ -193,7 +193,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         new_value = response
                         user_record.daily_activities = new_value
                         DatabaseHandler.save()
-                        final_response = with_followup(f"Your daily activities have been updated from '{old_value}' to '{new_value}'.")
+                        final_response = with_followup(f"Aktivitas harianmu telah diperbarui dari '{old_value}' menjadi '{new_value}'.")
                         response_data = {
                             "response": final_response,
                             "info_updated": True,
@@ -213,7 +213,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         new_value = response
                         user_record.medical_record = new_value
                         DatabaseHandler.save()
-                        final_response = with_followup(f"Your medical record has been updated from '{old_value}' to '{new_value}'.")
+                        final_response = with_followup(f"Catatan medis kamu telah diperbarui dari '{old_value}' menjadi '{new_value}'.")
                         response_data = {
                             "response": final_response,
                             "info_updated": True,
@@ -233,7 +233,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         new_value = float(response)
                         user_intent.weight_goal = new_value
                         DatabaseHandler.save()
-                        final_response = with_followup(f"Your weight goal has been updated from {old_value} kg to {new_value} kg.")
+                        final_response = with_followup(f"Target berat badanmu telah diperbarui dari {old_value} kg menjadi {new_value} kg.")
                         response_data = {
                             "response": final_response,
                             "info_updated": True,
@@ -253,7 +253,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         new_value = response
                         user_intent.general_goal = new_value
                         DatabaseHandler.save()
-                        final_response = with_followup(f"Your general goal has been updated from '{old_value}' to '{new_value}'.")
+                        final_response = with_followup(f"Tujuan umummu telah diperbarui dari '{old_value}' menjadi '{new_value}'.")
                         response_data = {
                             "response": final_response,
                             "info_updated": True,
@@ -285,7 +285,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                             try:
                                 response_dict = eval(response) # Hati-hati dengan eval, tapi Anda sudah punya ini
                             except Exception as e:
-                                response_dict = {"error": "Invalid response format", "raw": response}
+                                response_dict = {"error": "format response tidak valid", "raw": response}
 
                         if "error" in response_dict or not all(k in response_dict for k in ["foods", "carbohydrate", "fat", "protein"]):
                             # Jika LLM tidak mengembalikan format yang benar atau ada error,
@@ -337,9 +337,9 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                             food_list = ", ".join(user_intake.foods) if isinstance(user_intake.foods, list) else user_intake.foods
 
                             final_response = with_followup(
-                                f"Your calorie tracker has been updated! Today you've eaten: {food_list}. "
-                                f"Total for today: {user_intake.carbohydrate:.2f}g carbohydrate, "
-                                f"{user_intake.fat:.2f}g fat, {user_intake.protein:.2f}g protein."
+                                f"Pencatatan kalori berhasil diperbarui! Hari ini kamu telah makan: {food_list}. "
+                                f"dengan: {user_intake.carbohydrate:.2f}g karbohidrat, "
+                                f"{user_intake.fat:.2f}g lemak, {user_intake.protein:.2f}g protein."
                             )
                             response_data = {
                                 "response": final_response,
@@ -359,7 +359,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                     case 9:
                         # User is asking for health record information
                         record_info = (
-                            f"Here is your health record:\n"
+                            f"Berikut catatan kesehatanmu:\n"
                             f"- Weight: {user_record.weight} kg\n"
                             f"- Height: {user_record.height} cm\n"
                             f"- Allergies: {user_record.food_allergies}\n"
@@ -384,7 +384,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                     case 10:
                         # User is asking for personal information
                         name = getattr(user_record, "name", None)
-                        personal_info = f"Here is your personal information:\n- Email: {email}"
+                        personal_info = f"Berikut ini adalah informasi pribadimu:\n- Email: {email}"
                         if name:
                             personal_info += f"\n- Name: {name}"
                         final_response = with_followup(personal_info)
@@ -403,7 +403,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
 
                     case _:
                         DatabaseHandler.save()
-                        final_response = "Sorry, your intention couldn't be determined."
+                        final_response = "maaf, sistem tidak bisa memahami maksdumu ."
                         response_data = {
                             "response": final_response,
                             "info_updated": False
