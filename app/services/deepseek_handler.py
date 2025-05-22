@@ -2,8 +2,9 @@ import asyncio
 from datetime import datetime
 import httpx
 import os
+import json
 from dotenv import load_dotenv
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, AsyncGenerator
 import time
 import cachetools
 
@@ -99,6 +100,81 @@ class DeepseekAPI:
             except Exception as e:
                 # For other exceptions, don't retry
                 raise e
+    
+    @classmethod
+    async def send_stream(cls, messages: List[Dict[str, str]], temperature: float = 0.7) -> AsyncGenerator[str, None]:
+        """Send messages to the DeepSeek API and yield responses as they come in"""
+        headers = {
+            "Content-Type": "application/json", 
+            "Authorization": f"Bearer {os.environ.get('DEEPSEEK_API_KEY')}"
+        }
+
+        payload = {
+            "model": "deepseek-chat",
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": 512,
+            "stream": True  # Enable streaming
+        }
+
+        client = await cls.get_client()
+        start_time = time.time()
+        
+        # Implement retry logic - try up to 3 times with exponential backoff
+        max_retries = 3
+        retry_delay = 1  # Start with 1 second delay
+        
+        for attempt in range(max_retries):
+            try:
+                async with client.stream("POST", cls.API_URL, headers=headers, json=payload, timeout=60.0) as response:
+                    if response.status_code != 200:
+                        response_text = await response.aread()
+                        raise Exception(f"DeepSeek API error: {response.status_code} - {response_text.decode('utf-8')}")
+                    
+                    # Process the streaming response
+                    full_response = ""
+                    async for chunk in response.aiter_bytes():
+                        chunk_str = chunk.decode('utf-8')
+                        
+                        # Parse the SSE format - each chunk starts with "data: "
+                        for line in chunk_str.split('\n'):
+                            if line.startswith('data: '):
+                                data_str = line[6:]  # Remove "data: " prefix
+                                
+                                # Check for [DONE] marker
+                                if data_str.strip() == "[DONE]":
+                                    break
+                                    
+                                try:
+                                    data = json.loads(data_str)
+                                    delta_content = data.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                                    if delta_content:
+                                        full_response += delta_content
+                                        yield delta_content
+                                except json.JSONDecodeError:
+                                    continue
+                                except Exception as e:
+                                    print(f"Error processing chunk: {e}")
+                                    continue
+                    
+                    # Cache the full response for future use
+                    cache_key = cls.get_cache_key(messages, temperature)
+                    API_CACHE[cache_key] = full_response
+                    print(f"Streaming API call took {time.time() - start_time:.2f} seconds")
+                    return
+                    
+            except httpx.ReadTimeout:
+                if attempt < max_retries - 1:
+                    # If not the last attempt, wait and retry
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                    print(f"DeepSeek API streaming timed out. Retrying attempt {attempt + 2}/{max_retries}")
+                else:
+                    # On the last attempt, raise the exception
+                    raise Exception("DeepSeek API streaming timed out after multiple attempts. Please try again later.")
+            except Exception as e:
+                # For other exceptions, don't retry
+                raise e
 
 
 class Deepseek:
@@ -172,6 +248,37 @@ class Deepseek:
         return response
 
     @staticmethod
+    async def send_stream(message: str, email: str, temperature: float = 0.7) -> AsyncGenerator[str, None]:
+        """Process a user message, stream response from DeepSeek, and update session"""
+        # Find or create session
+        session = DatabaseHandler.find_session(email)
+        if session is None:
+            session = Session(email)
+            session.add_system_prompt()
+            DatabaseHandler.session.append(session)
+        
+        # Add user message to session
+        session.add_user_prompt(message)
+        
+        # Stream response from API - first get all messages
+        messages = session.messages
+        if not messages:
+            raise ValueError("No messages to send.")
+        
+        # Initialize full response accumulator
+        full_response = ""
+        
+        # Use streaming API
+        async for token in DeepseekAPI.send_stream(messages, temperature):
+            full_response += token
+            yield token
+        
+        # After streaming is complete, add the full response to the session
+        session.add_assistant_response(full_response)
+        
+        # No need to return as we're yielding tokens during the stream
+
+    @staticmethod
     async def _send_messages(session: Session, temperature: float) -> str:
         """Send all messages in session to DeepSeek API"""
         messages = session.messages
@@ -196,8 +303,10 @@ async def main():
             break
             
         try:
-            response = await Deepseek.send(user_input, email)
-            print(f"Assistant: {response}")
+            print("Assistant: ", end="", flush=True)
+            async for token in Deepseek.send_stream(user_input, email):
+                print(token, end="", flush=True)
+            print()  # New line after response
         except Exception as e:
             print(f"Error: {e}")
 

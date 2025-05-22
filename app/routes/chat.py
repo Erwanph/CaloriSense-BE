@@ -13,7 +13,7 @@ async def answer(email: str, message: str):
     intentPrompt = IntentPredictor.intent_prompt(intentionIdx, email)
 
     def with_followup(text: str):
-        return f"✅ Done! Would you like to do anything else?\n\n{text}"
+        return f"✅ Selesai! Apakah kamu ingin melakukan hal lain?\n\n{text}"
 
 
     match intentionIdx:
@@ -30,7 +30,7 @@ async def answer(email: str, message: str):
             record.weight = new_value
             DatabaseHandler.save()
             return {
-                "response": with_followup(f"Your weight has been updated from {old_value} kg to {new_value} kg."),
+                "response": with_followup(f"Berat badanmu telah diperbarui dari {old_value} kg menjadi {new_value} kg."),
                 "info_updated": True,
                 "intent": "weight"
             }
@@ -43,7 +43,7 @@ async def answer(email: str, message: str):
             record.height = new_value
             DatabaseHandler.save()
             return {
-                "response": with_followup(f"Your height has been updated from {old_value} cm to {new_value} cm."),
+                "response": with_followup(f"Tinggi badanmu telah diperbarui dari {old_value} cm menjadi {new_value} cm."),
                 "info_updated": True,
                 "intent": "height"
             }
@@ -56,7 +56,7 @@ async def answer(email: str, message: str):
             record.food_allergies = new_value
             DatabaseHandler.save()
             return {
-                "response": with_followup(f"Your food allergies information has been updated from '{old_value}' to '{new_value}'."),
+                "response": with_followup(f"Informasi alergi makananmu telah diperbarui dari '{old_value}' menjadi '{new_value}'."),
                 "info_updated": True,
                 "intent": "food_allergies"
             }
@@ -69,7 +69,7 @@ async def answer(email: str, message: str):
             record.daily_activities = new_value
             DatabaseHandler.save()
             return {
-                "response": with_followup(f"Your daily activities have been updated from '{old_value}' to '{new_value}'."),
+                "response": with_followup(f"Aktivitas harianmu telah diperbarui dari '{old_value}' menjadi '{new_value}'."),
                 "info_updated": True,
                 "intent": "daily_activities"
             }
@@ -95,7 +95,7 @@ async def answer(email: str, message: str):
             intent.weight_goal = new_value
             DatabaseHandler.save()
             return {
-                "response": with_followup(f"Your weight goal has been updated from {old_value} kg to {new_value} kg."),
+                "response": with_followup(f"Catatan medis kamu telah diperbarui dari '{old_value}' menjadi '{new_value}'."),
                 "info_updated": True,
                 "intent": "weight_goal"
             }
@@ -108,7 +108,7 @@ async def answer(email: str, message: str):
             intent.general_goal = new_value
             DatabaseHandler.save()
             return {
-                "response": with_followup(f"Your general goal has been updated from '{old_value}' to '{new_value}'."),
+                "response": with_followup(f"Tujuan umummu telah diperbarui dari '{old_value}' menjadi '{new_value}'."),
                 "info_updated": True,
                 "intent": "general_goal"
             }
@@ -133,7 +133,7 @@ async def answer(email: str, message: str):
             intake.protein = response_dict['protein']
             DatabaseHandler.save()
             return {
-                "response": with_followup(f"Your calorie tracker has been updated!. You ate {intake.foods} with {intake.carbohydrate} carbohydrate, {intake.fat} fat, {intake.protein} protein"),
+                "response": with_followup(f"Kalori harianmu telah diperbarui! Kamu makan {intake.foods} dengan {intake.carbohydrate}g karbohidrat, "f"{intake.fat}g lemak, dan {intake.protein}g protein."),
                 "info_updated": True,
                 "intent": "food_intake"
             }

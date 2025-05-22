@@ -14,16 +14,23 @@ possible_intentions = [
     "update medical records",
     "update weight goal",
     "update general goal",
-    "telling you what food they eat with the intention to log their food. Be aware this occurs rarely and only answer this if you are confident."
+    "telling you what food they eat with the intention to log their food. Be aware this occurs rarely and only answer this if you are confident.",
     # "ask current weight"
 ]
 
-intent_system_prompt = f'''
-Predict the user's intent. If unsure, answer 0.
-Choose from:
+intent_system_prompt = f"""
+You are an intent classifier.
+
+Your task is to determine the user's intent based on their message. 
+If the user's intent is unclear, ambiguous, too short, or only contains a topic keyword without any clear action, return 0.
+
+Do not guess or assume. Only choose another number if the message **clearly expresses a user intention**.
+
+Choose only from:
 {chr(10).join(f"{i}. {intent}" for i, intent in enumerate(possible_intentions))}
-Respond with a single digit only.
-'''
+
+Return a single digit only (e.g. 0, 1, 2, ...). No explanation.
+"""
 
 class IntentPredictor:
     # Cache intent prediction results to avoid redundant API calls

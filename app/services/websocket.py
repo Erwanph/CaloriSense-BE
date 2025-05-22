@@ -97,7 +97,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                 intentPrompt = IntentPredictor.intent_prompt(intentionIdx, email) 
 
                 def with_followup(text: str):
-                    return f"✅ Done! Would you like to do anything else?\n\n{text}"
+                    return f"✅ Selesai! Apakah kamu ingin melakukan hal lain?\n\n{text}"
 
                 response_data = {}
                 
@@ -118,7 +118,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         user_record.weight = new_value
                         DatabaseHandler.save()
                         response_data = {
-                            "response": with_followup(f"Your weight has been updated from {old_value} kg to {new_value} kg."),
+                            "response": with_followup(f"Berat badanmu telah diperbarui dari {old_value} kg menjadi {new_value} kg."),
                             "info_updated": True,
                             "intent": "weight"
                         }
@@ -130,7 +130,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         user_record.height = new_value
                         DatabaseHandler.save()
                         response_data = {
-                            "response": with_followup(f"Your height has been updated from {old_value} cm to {new_value} cm."),
+                            "response": with_followup(f"Tinggi badanmu telah diperbarui dari {old_value} cm menjadi {new_value} cm."),
                             "info_updated": True,
                             "intent": "height"
                         }
@@ -142,7 +142,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         user_record.food_allergies = new_value
                         DatabaseHandler.save()
                         response_data = {
-                            "response": with_followup(f"Your food allergies information has been updated from '{old_value}' to '{new_value}'."),
+                            "response": with_followup(f"Informasi alergi makananmu telah diperbarui dari '{old_value}' menjadi '{new_value}'."),
                             "info_updated": True,
                             "intent": "food_allergies"
                         }
@@ -154,7 +154,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         user_record.daily_activities = new_value
                         DatabaseHandler.save()
                         response_data = {
-                            "response": with_followup(f"Your daily activities have been updated from '{old_value}' to '{new_value}'."),
+                            "response": with_followup(f"Aktivitas harianmu telah diperbarui dari '{old_value}' menjadi '{new_value}'."),
                             "info_updated": True,
                             "intent": "daily_activities"
                         }
@@ -166,7 +166,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         user_record.medical_record = new_value
                         DatabaseHandler.save()
                         response_data = {
-                            "response": with_followup(f"Your medical record has been updated from '{old_value}' to '{new_value}'."),
+                            "response": with_followup(f"Catatan medis kamu telah diperbarui dari '{old_value}' menjadi '{new_value}'."),
                             "info_updated": True,
                             "intent": "medical_record"
                         }
@@ -178,7 +178,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         user_intent.weight_goal = new_value
                         DatabaseHandler.save()
                         response_data = {
-                            "response": with_followup(f"Your weight goal has been updated from {old_value} kg to {new_value} kg."),
+                            "response": with_followup(f"Target berat badanmu telah diperbarui dari {old_value} kg menjadi {new_value} kg."),
                             "info_updated": True,
                             "intent": "weight_goal"
                         }
@@ -190,7 +190,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         user_intent.general_goal = new_value
                         DatabaseHandler.save()
                         response_data = {
-                            "response": with_followup(f"Your general goal has been updated from '{old_value}' to '{new_value}'."),
+                            "response": with_followup(f"Tujuan umummu telah diperbarui dari '{old_value}' menjadi '{new_value}'."),
                             "info_updated": True,
                             "intent": "general_goal"
                         }
@@ -203,7 +203,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                             try:
                                 response_dict = eval(response)
                             except Exception as e:
-                                response_dict = {"error": "Invalid response format", "raw": response}
+                                response_dict = {"error": "Format respons tidak valid", "raw": response}
 
                         # Properly handle the food items (avoid duplicates)
                         user_intake.foods = response_dict['foods']
@@ -216,7 +216,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                         food_list = ", ".join(user_intake.foods) if isinstance(user_intake.foods, list) else user_intake.foods
                         
                         response_data = {
-                            "response": with_followup(f"Your calorie tracker has been updated! You ate {food_list} with {user_intake.carbohydrate}g carbohydrate, {user_intake.fat}g fat, {user_intake.protein}g protein."),
+                            "response": with_followup(f"Pencatatan kalori berhasil diperbarui! Kamu makan {food_list} dengan {user_intake.carbohydrate}g karbohidrat, {user_intake.fat}g lemak, dan {user_intake.protein}g protein."),
                             "info_updated": True,
                             "intent": "food_intake"
                         }
@@ -224,7 +224,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                     case 9:
                         record = DatabaseHandler.find_health_record(email)
                         return {
-                            "response": f"Your current weight is {record.weight} kg.",
+                            "response": f"Berat badanmu saat ini adalah {user_record.weight} kg.",
                             "info_updated": False,
                             "intent": "get_weight"
                         }                   
@@ -232,7 +232,7 @@ async def websocket_endpoint(websocket: WebSocket, email: str):
                     case _:
                         DatabaseHandler.save()
                         response_data = {
-                            "response": "Sorry, your intention couldn't be determined.",
+                            "response": "Maaf, sistem tidak bisa memahami maksudmu.",
                             "info_updated": False
                         }
                 
