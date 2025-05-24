@@ -93,7 +93,7 @@ class AuthHandler:
                 "password": password
             })
             
-            # Preload user data into cache
+            # Preload user data into cache (without creating duplicates)
             self._preload_user_data(email)
             
             return {
@@ -112,15 +112,18 @@ class AuthHandler:
             }
 
     def _initialize_user_data(self, email: str):
-        """Initialize and save user data records for new users"""
+        """Initialize and save user data records for new users - only creates if doesn't exist"""
         # Initialize Database
         DatabaseHandler.init()
+        
+        records_created = False
         
         # Create new user record if it doesn't exist
         user = DatabaseHandler.find_user(email)
         if not user:
             user = User(email=email, name="New User")
             DatabaseHandler.user.append(user)
+            records_created = True
         
         # Create health record if it doesn't exist
         health_record = DatabaseHandler.find_health_record(email)
@@ -136,6 +139,7 @@ class AuthHandler:
                 medical_record=""
             )
             DatabaseHandler.health_record.append(health_record)
+            records_created = True
         
         # Create intent if it doesn't exist
         intent = DatabaseHandler.find_intent(email)
@@ -146,25 +150,28 @@ class AuthHandler:
                 general_goal=""
             )
             DatabaseHandler.intent.append(intent)
+            records_created = True
         
         # Create intake history if it doesn't exist
         intake_history = DatabaseHandler.find_intake_history(email)
         if not intake_history:
             intake_history = IntakeHistory(email=email, intakes=[])
             DatabaseHandler.intake_history.append(intake_history)
+            records_created = True
         
-        # Save changes to database
-        DatabaseHandler.save()
+        # Only save if we actually created new records
+        if records_created:
+            DatabaseHandler.save()
         
         # Cache data
         self._preload_user_data(email)
 
     def _preload_user_data(self, email: str):
-        """Load user data from database into cache"""
+        """Load user data from database into cache - doesn't create records"""
         # Initialize Database
         DatabaseHandler.init()
         
-        # Load user data
+        # Load user data (without creating new records)
         user = DatabaseHandler.find_user(email)
         health_record = DatabaseHandler.find_health_record(email)
         intent = DatabaseHandler.find_intent(email)

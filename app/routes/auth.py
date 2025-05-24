@@ -97,29 +97,54 @@ async def initialize_user(
 ):
     email = current_user["email"]
     
-    # --- User ---
-    new_user = User(
-        email=email,
-        first_name=data.first_name,
-        last_name=data.last_name,
-        date_of_birth=data.date_of_birth,
-        gender=data.gender,
-        country=data.country
-    )
-    DatabaseHandler.user.append(new_user)
+    # Initialize database
+    DatabaseHandler.init()
+    
+    # --- User: Update existing or create new ---
+    existing_user = DatabaseHandler.find_user(email)
+    if existing_user:
+        # Update existing user
+        existing_user.first_name = data.first_name
+        existing_user.last_name = data.last_name
+        existing_user.date_of_birth = data.date_of_birth
+        existing_user.gender = data.gender
+        existing_user.country = data.country
+    else:
+        # Create new user (shouldn't happen if auth works correctly)
+        new_user = User(
+            email=email,
+            first_name=data.first_name,
+            last_name=data.last_name,
+            date_of_birth=data.date_of_birth,
+            gender=data.gender,
+            country=data.country
+        )
+        DatabaseHandler.user.append(new_user)
 
-    # --- Health Record ---
-    new_health = HealthRecord(
-        email=email,
-        weight=data.weight,
-        height=data.height,
-        food_allergies=data.food_allergies,
-        daily_exercises=data.daily_exercises,
-        daily_activities=data.daily_activities,
-        medical_record=data.medical_record
-    )
-    DatabaseHandler.health_record.append(new_health)
+    # --- Health Record: Update existing or create new ---
+    existing_health = DatabaseHandler.find_health_record(email)
+    if existing_health:
+        # Update existing health record
+        existing_health.weight = data.weight
+        existing_health.height = data.height
+        existing_health.food_allergies = data.food_allergies
+        existing_health.daily_exercises = data.daily_exercises
+        existing_health.daily_activities = data.daily_activities
+        existing_health.medical_record = data.medical_record
+    else:
+        # Create new health record
+        new_health = HealthRecord(
+            email=email,
+            weight=data.weight,
+            height=data.height,
+            food_allergies=data.food_allergies,
+            daily_exercises=data.daily_exercises,
+            daily_activities=data.daily_activities,
+            medical_record=data.medical_record
+        )
+        DatabaseHandler.health_record.append(new_health)
 
+    # Calculate RDI
     rdi = await Deepseek.calculate_rdi(
         data.weight,
         data.height,
@@ -129,14 +154,24 @@ async def initialize_user(
         data.general_goal
     )
 
-    # --- Intent ---
-    new_intent = Intent(
-        email=email,
-        weight_goal=data.weight_goal,
-        general_goal=data.general_goal,
-        rdi=rdi
-    )
-    DatabaseHandler.intent.append(new_intent)
+    # --- Intent: Update existing or create new ---
+    existing_intent = DatabaseHandler.find_intent(email)
+    if existing_intent:
+        # Update existing intent
+        existing_intent.weight_goal = data.weight_goal
+        existing_intent.general_goal = data.general_goal
+        existing_intent.rdi = rdi
+    else:
+        # Create new intent
+        new_intent = Intent(
+            email=email,
+            weight_goal=data.weight_goal,
+            general_goal=data.general_goal,
+            rdi=rdi
+        )
+        DatabaseHandler.intent.append(new_intent)
+    
+    # Save changes
     DatabaseHandler.save()
 
     return {"message": "User data initialized successfully"}
