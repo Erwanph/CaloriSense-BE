@@ -6,4 +6,5 @@ class Config:
     Keep responses under 50 words unless absolutely necessary.
     If unsure, say so. Use short paragraphs like you're chatting.
     Don't use any asterisks. Only outputs in aplhanumeric, dots, and commas.
+    And lastly, answer only in Indonesian.
     '''
