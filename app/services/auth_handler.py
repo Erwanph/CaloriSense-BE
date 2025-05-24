@@ -121,7 +121,14 @@ class AuthHandler:
         # Create new user record if it doesn't exist
         user = DatabaseHandler.find_user(email)
         if not user:
-            user = User(email=email, name="New User")
+            user = User(
+                email=email,
+                first_name="",
+                last_name="",
+                date_of_birth="",
+                gender="",
+                country=""
+            )
             DatabaseHandler.user.append(user)
             records_created = True
         
@@ -132,9 +139,8 @@ class AuthHandler:
                 email=email,
                 weight=0.0,
                 height=0.0,
-                date_of_birth="",
-                gender="",
                 food_allergies="",
+                daily_exercises="",
                 daily_activities="",
                 medical_record=""
             )
@@ -147,7 +153,8 @@ class AuthHandler:
             intent = Intent(
                 email=email,
                 weight_goal=0.0,
-                general_goal=""
+                general_goal="",
+                rdi=0.0
             )
             DatabaseHandler.intent.append(intent)
             records_created = True
